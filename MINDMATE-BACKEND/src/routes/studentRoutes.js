@@ -56,4 +56,9 @@ router.delete('/habits/:index', studentAuth, StudentController.deleteHabitLog);
 router.get('/resources', studentAuth, StudentController.getResources);
 router.get('/resources/:id', studentAuth, StudentController.getResourceById);
 
+// Reports
+router.post('/reports', studentAuth, StudentController.createReport);
+router.get('/reports', studentAuth, StudentController.getMyReports);
+router.delete('/reports/:id', studentAuth, StudentController.deleteReport);
+
 module.exports = router;

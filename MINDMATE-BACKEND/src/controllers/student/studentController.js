@@ -389,6 +389,46 @@ const studentController = {
     res.status(200).json(resource);
   }),
 
+  // REPORTS
+  createReport: asyncHandler(async (req, res) => {
+    const { TargetId, Reason } = req.body;
+
+    if (!TargetId || !Reason) {
+      return res.status(400).json({ message: 'TargetId and Reason are required' });
+    }
+
+    const report = await Report.create({
+      ReporterId: req.user._id,
+      TargetId,
+      Reason,
+    });
+
+    res.status(201).json(report);
+  }),
+
+  getMyReports: asyncHandler(async (req, res) => {
+    const reports = await Report.find({ ReporterId: req.user._id })
+      .sort({ createdAt: -1 }); // Show newest first
+    res.status(200).json(reports);
+  }),
+
+  deleteReport: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const report = await Report.findById(id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Optional: Ensure only the user who created the report can delete it
+    if (!report.ReporterId.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Unauthorized to delete this report' });
+    }
+
+    await report.deleteOne();
+    res.status(200).json({ message: 'Report deleted successfully' });
+  }),
+
 };
 
 module.exports = studentController;
