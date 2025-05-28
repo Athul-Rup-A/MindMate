@@ -18,4 +18,10 @@ router.get('/profile', studentAuth, StudentController.getProfile);
 router.put('/change-profile-password', studentAuth, StudentController.changePassword);
 router.put('/profile', studentAuth, StudentController.updateProfile);
 
+// Appointments
+router.post('/appointments', studentAuth, StudentController.createAppointment);
+router.get('/appointments', studentAuth, StudentController.getMyAppointments);
+router.put('/appointments/:id', studentAuth, StudentController.updateAppointment);
+router.delete('/appointments/:id', studentAuth, StudentController.cancelAppointment);
+
 module.exports = router;

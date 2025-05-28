@@ -94,6 +94,51 @@ const studentController = {
     res.status(200).json(updated);
   }),
 
+  // APPOINTMENTS
+  createAppointment: asyncHandler(async (req, res) => {
+    const { CounselorId, SlotDate, SlotStartTime, SlotEndTime } = req.body;
+    const appointment = await Appointment.create({
+      CounselorId,
+      SlotDate,
+      SlotStartTime,
+      SlotEndTime,
+      StudentId: req.user._id,
+      ReminderSent: false,
+      Status: 'pending',
+      CreatedAt: new Date(),
+    });
+    res.status(201).json(appointment);
+  }),
+
+  getMyAppointments: asyncHandler(async (req, res) => {
+    const appointments = await Appointment.find({ StudentId: req.user._id });
+    res.status(200).json(appointments);
+  }),
+
+  updateAppointment: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+    const appointment = await Appointment.findOneAndUpdate(
+      { _id: id, StudentId: req.user._id },
+      updateData,
+      { new: true }
+    );
+    if (!appointment)
+      return res.status(404).json({ message: 'Appointment not found' });
+    res.status(200).json(appointment);
+  }),
+
+  cancelAppointment: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const appointment = await Appointment.findOneAndDelete({
+      _id: id,
+      StudentId: req.user._id,
+    });
+    if (!appointment)
+      return res.status(404).json({ message: 'Appointment not found' });
+    res.status(200).json({ message: 'Appointment canceled' });
+  }),
+
 };
 
 module.exports = studentController;
