@@ -267,6 +267,115 @@ const studentController = {
     res.status(200).json({ message: 'SOS Log deleted' });
   }),
 
+  // WELLNESS (MOOD)
+  addMoodEntry: asyncHandler(async (req, res) => {
+    const { Date, Mood, Note, Tags } = req.body;
+    if (!Mood) return res.status(400).json({ message: 'Mood is required' });
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.user._id,
+      { $push: { MoodEntries: { Date, Mood, Note, Tags } } },
+      { new: true }
+    );
+
+    res.status(201).json(updatedStudent.MoodEntries);
+  }),
+
+  getMoodEntries: asyncHandler(async (req, res) => {
+    const student = await Student.findById(req.user._id);
+    res.status(200).json(student.MoodEntries);
+  }),
+
+  updateMoodEntry: asyncHandler(async (req, res) => {
+    const index = parseInt(req.params.index, 10);
+    const { Date, Mood, Note, Tags } = req.body;
+    if (isNaN(index))
+      return res.status(400).json({ message: 'Invalid index' });
+
+    const student = await Student.findById(req.user._id);
+    if (!student.MoodEntries[index])
+      return res.status(404).json({ message: 'Mood entry not found' });
+
+    if (Date) student.MoodEntries[index].Date = Date;
+    if (Mood) student.MoodEntries[index].Mood = Mood;
+    if (Note) student.MoodEntries[index].Note = Note;
+    if (Tags) student.MoodEntries[index].Tags = Tags;
+
+    await student.save();
+    res.status(200).json(student.MoodEntries[index]);
+  }),
+
+  deleteMoodEntry: asyncHandler(async (req, res) => {
+    const index = parseInt(req.params.index, 10);
+    if (isNaN(index))
+      return res.status(400).json({ message: 'Invalid index' });
+
+    const student = await Student.findById(req.user._id);
+    if (!student.MoodEntries[index])
+      return res.status(404).json({ message: 'Mood entry not found' });
+
+    student.MoodEntries.splice(index, 1);
+    await student.save();
+
+    res.status(200).json({ message: 'Mood entry deleted' });
+  }),
+
+  // WELLNESS (HABIT)
+  addHabitLog: asyncHandler(async (req, res) => {
+    const { Date, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
+    if (!Date) return res.status(400).json({ message: 'Date is required' });
+
+    const habitLog = { Date, Exercise, Hydration, ScreenTime, SleepHours };
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.user._id,
+      { $push: { HabitLogs: habitLog } },
+      { new: true }
+    );
+
+    res.status(201).json(updatedStudent.HabitLogs);
+  }),
+
+  getHabitLogs: asyncHandler(async (req, res) => {
+    const student = await Student.findById(req.user._id);
+    res.status(200).json(student.HabitLogs);
+  }),
+
+  updateHabitLog: asyncHandler(async (req, res) => {
+    const index = parseInt(req.params.index, 10);
+    const { Date, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
+    if (isNaN(index))
+      return res.status(400).json({ message: 'Invalid index' });
+
+    const student = await Student.findById(req.user._id);
+    if (!student.HabitLogs[index])
+      return res.status(404).json({ message: 'Habit log not found' });
+
+    if (Date) student.HabitLogs[index].Date = Date;
+    if (Exercise) student.HabitLogs[index].Exercise = Exercise;
+    if (Hydration) student.HabitLogs[index].Hydration = Hydration;
+    if (ScreenTime) student.HabitLogs[index].ScreenTime = ScreenTime;
+    if (SleepHours) student.HabitLogs[index].SleepHours = SleepHours;
+
+    await student.save();
+    res.status(200).json(student.HabitLogs[index]);
+  }),
+
+  deleteHabitLog: asyncHandler(async (req, res) => {
+    const index = parseInt(req.params.index, 10);
+    if (isNaN(index))
+      return res.status(400).json({ message: 'Invalid index' });
+
+    const student = await Student.findById(req.user._id);
+    if (!student.HabitLogs[index])
+      return res.status(404).json({ message: 'Habit log not found' });
+
+    student.HabitLogs.splice(index, 1);
+    await student.save();
+
+    res.status(200).json({ message: 'Habit log deleted' });
+  }),
+
 };
 
 module.exports = studentController;

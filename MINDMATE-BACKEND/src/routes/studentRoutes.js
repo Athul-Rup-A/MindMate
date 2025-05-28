@@ -41,4 +41,15 @@ router.post('/sos', studentAuth, StudentController.triggerSOS);
 router.get('/sos', studentAuth, StudentController.getMySOSLogs);
 router.delete('/sos/:id', studentAuth, StudentController.deleteSOSLog);
 
+// Wellness (Mood & Habits)
+router.post('/mood', studentAuth, StudentController.addMoodEntry);
+router.get('/mood', studentAuth, StudentController.getMoodEntries);
+router.put('/mood/:index', studentAuth, StudentController.updateMoodEntry);
+router.delete('/mood/:index', studentAuth, StudentController.deleteMoodEntry);
+
+router.post('/habits', studentAuth, StudentController.addHabitLog);
+router.get('/habits', studentAuth, StudentController.getHabitLogs);
+router.put('/habits/:index', studentAuth, StudentController.updateHabitLog);
+router.delete('/habits/:index', studentAuth, StudentController.deleteHabitLog);
+
 module.exports = router;
