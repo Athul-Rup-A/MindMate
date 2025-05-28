@@ -139,6 +139,53 @@ const studentController = {
     res.status(200).json({ message: 'Appointment canceled' });
   }),
 
+  // VENTS
+  createVent: asyncHandler(async (req, res) => {
+    const { Topic, Content } = req.body;
+    if (!Topic || !Content)
+      return res.status(400).json({ message: 'Topic and Content required' });
+
+    const vent = await Vent.create({
+      Topic,
+      Content,
+      StudentId: req.user._id,
+      CreatedAt: new Date(),
+      Likes: [],
+      Reports: [],
+    });
+
+    res.status(201).json(vent);
+  }),
+
+  getMyVents: asyncHandler(async (req, res) => {
+    const vents = await Vent.find({ StudentId: req.user._id }).sort({
+      CreatedAt: -1,
+    });
+    res.status(200).json(vents);
+  }),
+
+  updateVent: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+    const vent = await Vent.findOneAndUpdate(
+      { _id: id, StudentId: req.user._id },
+      updateData,
+      { new: true }
+    );
+    if (!vent) return res.status(404).json({ message: 'Vent not found' });
+    res.status(200).json(vent);
+  }),
+
+  deleteVent: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const vent = await Vent.findOneAndDelete({
+      _id: id,
+      StudentId: req.user._id,
+    });
+    if (!vent) return res.status(404).json({ message: 'Vent not found' });
+    res.status(200).json({ message: 'Vent deleted' });
+  }),
+
 };
 
 module.exports = studentController;

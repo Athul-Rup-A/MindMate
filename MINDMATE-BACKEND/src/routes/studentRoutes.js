@@ -24,4 +24,10 @@ router.get('/appointments', studentAuth, StudentController.getMyAppointments);
 router.put('/appointments/:id', studentAuth, StudentController.updateAppointment);
 router.delete('/appointments/:id', studentAuth, StudentController.cancelAppointment);
 
+// Vents
+router.post('/vents', studentAuth, StudentController.createVent);
+router.get('/vents', studentAuth, StudentController.getVents);
+router.put('/vents/:id', studentAuth, StudentController.updateVent);
+router.delete('/vents/:id', studentAuth, StudentController.deleteVent);
+
 module.exports = router;
