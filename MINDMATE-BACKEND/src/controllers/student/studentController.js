@@ -232,6 +232,41 @@ const studentController = {
     res.status(200).json({ message: 'Feedback deleted' });
   }),
 
+  // SOS
+  triggerSOS: asyncHandler(async (req, res) => {
+    const { AlertedTo, Method } = req.body;
+    if (!AlertedTo || !Array.isArray(AlertedTo) || AlertedTo.length === 0)
+      return res
+        .status(400)
+        .json({ message: 'AlertedTo array with at least one entry required' });
+
+    const sos = await SOSLog.create({
+      StudentId: req.user._id,
+      AlertedTo,
+      Method,
+      TriggeredAt: new Date(),
+    });
+
+    res.status(201).json(sos);
+  }),
+
+  getMySOSLogs: asyncHandler(async (req, res) => {
+    const soslogs = await SOSLog.find({ StudentId: req.user._id }).sort({
+      TriggeredAt: -1,
+    });
+    res.status(200).json(soslogs);
+  }),
+
+  deleteSOSLog: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const deleted = await SOSLog.findOneAndDelete({
+      _id: id,
+      StudentId: req.user._id,
+    });
+    if (!deleted) return res.status(404).json({ message: 'SOS Log not found' });
+    res.status(200).json({ message: 'SOS Log deleted' });
+  }),
+
 };
 
 module.exports = studentController;

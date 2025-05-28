@@ -36,4 +36,9 @@ router.get('/feedbacks', studentAuth, StudentController.getMyFeedbacks);
 router.put('/feedbacks/:id', studentAuth, StudentController.updateFeedback);
 router.delete('/feedbacks/:id', studentAuth, StudentController.deleteFeedback);
 
+// SOS
+router.post('/sos', studentAuth, StudentController.triggerSOS);
+router.get('/sos', studentAuth, StudentController.getMySOSLogs);
+router.delete('/sos/:id', studentAuth, StudentController.deleteSOSLog);
+
 module.exports = router;
