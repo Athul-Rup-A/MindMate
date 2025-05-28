@@ -8,7 +8,7 @@ const Vent = require('../../models/VentWall');
 const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
 const Resource = require('../../models/Resource');
-const Reports = require('../../models/Report');
+const Report = require('../../models/Report');
 
 const studentController = {
 
