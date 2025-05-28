@@ -13,4 +13,9 @@ const studentAuth = [auth, permitRoles('student')];
 router.post('/signup', StudentController.signupStudent);
 router.post('/login', StudentController.loginStudent);
 
+// Profile
+router.get('/profile', studentAuth, StudentController.getProfile);
+router.put('/change-profile-password', studentAuth, StudentController.changePassword);
+router.put('/profile', studentAuth, StudentController.updateProfile);
+
 module.exports = router;

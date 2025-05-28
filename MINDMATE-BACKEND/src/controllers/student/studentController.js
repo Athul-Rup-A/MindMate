@@ -42,6 +42,58 @@ const studentController = {
     res.status(200).json({ token, student });
   }),
 
+  // PROFILE
+  getProfile: asyncHandler(async (req, res) => {
+    const profile = await Student.findById(req.user._id)
+      .select('-PasswordHash')
+      .populate({
+        path: 'VentPosts',
+        select: '-__v',
+      });
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const appointments = await Appointment.find({ StudentId: req.user._id }).select('-__v');
+    res.status(200).json({
+      ...profile.toObject(),
+      Appointments: appointments,
+    });
+  }),
+
+  changePassword: asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Both current and new passwords are required' });
+    }
+
+    const student = await Student.findById(req.user._id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, student.PasswordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    student.PasswordHash = await bcrypt.hash(newPassword, salt);
+
+    await student.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  }),
+
+  updateProfile: asyncHandler(async (req, res) => {
+    const updated = await Student.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+    }).select('-PasswordHash');
+    res.status(200).json(updated);
+  }),
+
 };
 
 module.exports = studentController;
