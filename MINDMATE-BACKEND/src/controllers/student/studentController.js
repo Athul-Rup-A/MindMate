@@ -186,6 +186,52 @@ const studentController = {
     res.status(200).json({ message: 'Vent deleted' });
   }),
 
+  // FEEDBACKS
+  createFeedback: asyncHandler(async (req, res) => {
+    const { Rating, Comment, Type } = req.body;
+    if (!Rating)
+      return res.status(400).json({ message: 'Rating is required' });
+
+    const feedback = await Feedback.create({
+      StudentId: req.user._id,
+      Rating,
+      Comment,
+      Type,
+      CreatedAt: new Date(),
+    });
+
+    res.status(201).json(feedback);
+  }),
+
+  getMyFeedbacks: asyncHandler(async (req, res) => {
+    const feedbacks = await Feedback.find({ StudentId: req.user._id }).sort({
+      CreatedAt: -1,
+    });
+    res.status(200).json(feedbacks);
+  }),
+
+  updateFeedback: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+    const feedback = await Feedback.findOneAndUpdate(
+      { _id: id, StudentId: req.user._id },
+      updateData,
+      { new: true }
+    );
+    if (!feedback) return res.status(404).json({ message: 'Feedback not found' });
+    res.status(200).json(feedback);
+  }),
+
+  deleteFeedback: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const deleted = await Feedback.findOneAndDelete({
+      _id: id,
+      StudentId: req.user._id,
+    });
+    if (!deleted) return res.status(404).json({ message: 'Feedback not found' });
+    res.status(200).json({ message: 'Feedback deleted' });
+  }),
+
 };
 
 module.exports = studentController;

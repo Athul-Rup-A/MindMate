@@ -30,4 +30,10 @@ router.get('/vents', studentAuth, StudentController.getVents);
 router.put('/vents/:id', studentAuth, StudentController.updateVent);
 router.delete('/vents/:id', studentAuth, StudentController.deleteVent);
 
+// Feedbacks
+router.post('/feedbacks', studentAuth, StudentController.submitFeedback);
+router.get('/feedbacks', studentAuth, StudentController.getMyFeedbacks);
+router.put('/feedbacks/:id', studentAuth, StudentController.updateFeedback);
+router.delete('/feedbacks/:id', studentAuth, StudentController.deleteFeedback);
+
 module.exports = router;
