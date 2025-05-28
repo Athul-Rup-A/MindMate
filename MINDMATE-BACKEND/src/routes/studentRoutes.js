@@ -26,7 +26,7 @@ router.delete('/appointments/:id', studentAuth, StudentController.cancelAppointm
 
 // Vents
 router.post('/vents', studentAuth, StudentController.createVent);
-router.get('/vents', studentAuth, StudentController.getVents);
+router.get('/vents', studentAuth, StudentController.getMyVents);
 router.put('/vents/:id', studentAuth, StudentController.updateVent);
 router.delete('/vents/:id', studentAuth, StudentController.deleteVent);
 
