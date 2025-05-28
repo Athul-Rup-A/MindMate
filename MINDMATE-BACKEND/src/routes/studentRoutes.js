@@ -52,4 +52,8 @@ router.get('/habits', studentAuth, StudentController.getHabitLogs);
 router.put('/habits/:index', studentAuth, StudentController.updateHabitLog);
 router.delete('/habits/:index', studentAuth, StudentController.deleteHabitLog);
 
+// Resources (View only)
+router.get('/resources', studentAuth, StudentController.getResources);
+router.get('/resources/:id', studentAuth, StudentController.getResourceById);
+
 module.exports = router;

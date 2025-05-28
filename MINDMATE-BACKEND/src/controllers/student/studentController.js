@@ -376,6 +376,19 @@ const studentController = {
     res.status(200).json({ message: 'Habit log deleted' });
   }),
 
+  // RESOURCES (VIEW ONLY)
+  getResources: asyncHandler(async (req, res) => {
+    const resources = await Resource.find();
+    res.status(200).json(resources);
+  }),
+
+  getResourceById: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const resource = await Resource.findById(id);
+    if (!resource) return res.status(404).json({ message: 'Resource not found' });
+    res.status(200).json(resource);
+  }),
+
 };
 
 module.exports = studentController;
