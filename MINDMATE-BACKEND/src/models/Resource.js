@@ -19,7 +19,6 @@ const ResourcesSchema = new Schema({
     type: String,
     enum: ['anxiety', 'study', 'sleep'],
   }],
-  // createdOn: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 const Resources = model('Resources', ResourcesSchema);

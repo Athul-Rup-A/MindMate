@@ -9,7 +9,6 @@ const ReportSchema = new Schema({
     enum: ['spam', 'abuse', 'offensive', 'harassment', 'misinformation'],
     required: true,
   },
-  // CreatedAt: { type: Date, default: Date.now },
   Status: {
     type: String,
     enum: ['pending', 'reviewed', 'resolved'],

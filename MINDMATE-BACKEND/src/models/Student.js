@@ -16,13 +16,12 @@ const StudentSchema = new Schema({
     Note: { type: String },
     Tags: [{
       type: String,
-      enum: ['tired', 'focussed', 'lonely', 'social', 'bored', 'energetic']
+      enum: ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic']
     }],
   }],
   Language: { type: String, default: 'en' },
   Role: { type: String, enum: ['student'], default: 'student' },
   VentPosts: [{ type: Schema.Types.ObjectId, ref: 'VentWall' }],
-  CreatedAt: { type: Date, default: Date.now },
   Status: {
     type: String,
     enum: ['active', 'pending', 'banned'],
