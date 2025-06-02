@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
@@ -15,6 +16,20 @@ const studentController = {
   // AUTH
   signupStudent: asyncHandler(async (req, res) => {
     const { AliasId, password } = req.body;
+
+    if (!AliasId || !password) {
+      return res.status(400).json({ message: 'Alias ID and password are required' });
+    }
+    // AliasId validation: alphanumeric and 4-20 characters
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(AliasId)) {
+      return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
+    }
+    // Password strength: at least 8 characters, with at least 1 letter and 1 number
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters long and contain at least one letter and one number',
+      });
+    }
     const existingStudent = await Student.findOne({ AliasId });
     if (existingStudent)
       return res.status(400).json({ message: 'Alias ID already in use' });
@@ -31,6 +46,9 @@ const studentController = {
 
   loginStudent: asyncHandler(async (req, res) => {
     const { AliasId, password } = req.body;
+    if (!AliasId || !password) {
+      return res.status(400).json({ message: 'Alias ID and password are required' });
+    }
     const student = await Student.findOne({ AliasId });
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
@@ -55,9 +73,10 @@ const studentController = {
       return res.status(404).json({ message: 'Student not found' });
     }
 
+    const profileObj = profile.toObject();
     const appointments = await Appointment.find({ StudentId: req.user._id }).select('-__v');
     res.status(200).json({
-      ...profile.toObject(),
+      ...profileObj,
       Appointments: appointments,
     });
   }),
@@ -67,6 +86,13 @@ const studentController = {
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ message: 'Both current and new passwords are required' });
+    }
+
+    // Password strength for new password
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+      return res.status(400).json({
+        message: 'New password must be at least 8 characters long and include at least one letter and one number',
+      });
     }
 
     const student = await Student.findById(req.user._id);
@@ -88,18 +114,65 @@ const studentController = {
   }),
 
   updateProfile: asyncHandler(async (req, res) => {
-    const updated = await Student.findByIdAndUpdate(req.user._id, req.body, {
+    const updates = req.body;
+    const allowedFields = ['Language', 'Status'];
+    const updateKeys = Object.keys(updates);
+
+    // Check for invalid fields
+    const isValidUpdate = updateKeys.every(key => allowedFields.includes(key));
+    if (!isValidUpdate) {
+      return res.status(400).json({ message: 'Invalid update fields' });
+    }
+
+    // Validate Language (if present)
+    if (updates.Language && typeof updates.Language !== 'string') {
+      return res.status(400).json({ message: 'Language must be a string' });
+    }
+
+    // Validate Status (if present)
+    if (updates.Status && !['active', 'pending', 'banned'].includes(updates.Status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const updated = await Student.findByIdAndUpdate(req.user._id, updates, {
       new: true,
     }).select('-PasswordHash');
+
     res.status(200).json(updated);
   }),
 
   // APPOINTMENTS
   createAppointment: asyncHandler(async (req, res) => {
     const { CounselorId, SlotDate, SlotStartTime, SlotEndTime } = req.body;
+    if (!CounselorId || !SlotDate || !SlotStartTime || !SlotEndTime) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(CounselorId)) {
+      return res.status(400).json({ message: 'Invalid Counselor ID' });
+    }
+
+    // Validate Date
+    const dateObj = new Date(SlotDate);
+    if (isNaN(dateObj)) {
+      return res.status(400).json({ message: 'Invalid Slot Date' });
+    }
+
+    // Validate time format (HH:mm)
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(SlotStartTime) || !timeRegex.test(SlotEndTime)) {
+      return res.status(400).json({ message: 'Invalid time format (expected HH:mm)' });
+    }
+
+    // Check SlotStartTime < SlotEndTime
+    if (SlotStartTime >= SlotEndTime) {
+      return res.status(400).json({ message: 'Start time must be before end time' });
+    }
+
     const appointment = await Appointment.create({
       CounselorId,
-      SlotDate,
+      SlotDate: dateObj,
       SlotStartTime,
       SlotEndTime,
       StudentId: req.user._id,
@@ -112,12 +185,58 @@ const studentController = {
 
   getMyAppointments: asyncHandler(async (req, res) => {
     const appointments = await Appointment.find({ StudentId: req.user._id });
+
+    if (!appointments) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
     res.status(200).json(appointments);
   }),
 
   updateAppointment: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid appointment ID' });
+    }
+
+    const allowedFields = ['SlotDate', 'SlotStartTime', 'SlotEndTime', 'Status'];
+    const isValidUpdate = Object.keys(updateData).every((key) =>
+      allowedFields.includes(key)
+    );
+
+    if (!isValidUpdate) {
+      return res.status(400).json({ message: 'Invalid fields in update' });
+    }
+
+    if (updateData.SlotDate && isNaN(new Date(updateData.SlotDate))) {
+      return res.status(400).json({ message: 'Invalid Slot Date' });
+    }
+
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (
+      (updateData.SlotStartTime && !timeRegex.test(updateData.SlotStartTime)) ||
+      (updateData.SlotEndTime && !timeRegex.test(updateData.SlotEndTime))
+    ) {
+      return res.status(400).json({ message: 'Invalid time format (expected HH:mm)' });
+    }
+
+    if (
+      updateData.SlotStartTime &&
+      updateData.SlotEndTime &&
+      updateData.SlotStartTime >= updateData.SlotEndTime
+    ) {
+      return res.status(400).json({ message: 'Start time must be before end time' });
+    }
+
+    if (
+      updateData.Status &&
+      !['pending', 'confirmed', 'rejected', 'completed'].includes(updateData.Status)
+    ) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
     const appointment = await Appointment.findOneAndUpdate(
       { _id: id, StudentId: req.user._id },
       updateData,
@@ -130,6 +249,11 @@ const studentController = {
 
   cancelAppointment: asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid appointment ID' });
+    }
+
     const appointment = await Appointment.findOneAndDelete({
       _id: id,
       StudentId: req.user._id,
@@ -145,12 +269,20 @@ const studentController = {
     if (!Topic || !Content)
       return res.status(400).json({ message: 'Topic and Content required' });
 
+    if (Topic.length > 10) {
+      return res.status(400).json({ message: 'Topic is too long (max 10 characters)' });
+    }
+
+    if (Content.length < 10) {
+      return res.status(400).json({ message: 'Content must be at least 10 characters long' });
+    }
+
     const vent = await Vent.create({
       Topic,
       Content,
       StudentId: req.user._id,
-      CreatedAt: new Date(),
-      Likes: [],
+      // CreatedAt: new Date(),
+      // Likes: [],
       Reports: [],
     });
 
@@ -161,12 +293,38 @@ const studentController = {
     const vents = await Vent.find({ StudentId: req.user._id }).sort({
       CreatedAt: -1,
     });
+
+    if (!vents) {
+      return res.status(404).json({ message: 'Vent not found' });
+    }
+
     res.status(200).json(vents);
   }),
 
   updateVent: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Vent ID' });
+    }
+
+    const allowedFields = ['Topic', 'Content'];
+    const isValidUpdate = Object.keys(updateData).every((key) =>
+      allowedFields.includes(key)
+    );
+    if (!isValidUpdate) {
+      return res.status(400).json({ message: 'Only Topic and Content can be updated' });
+    }
+
+    if (updateData.Topic && updateData.Topic.length > 10) {
+      return res.status(400).json({ message: 'Topic is too long (max 10 characters)' });
+    }
+
+    if (updateData.Content && updateData.Content.length < 10) {
+      return res.status(400).json({ message: 'Content must be at least 10 characters long' });
+    }
+
     const vent = await Vent.findOneAndUpdate(
       { _id: id, StudentId: req.user._id },
       updateData,
@@ -178,6 +336,11 @@ const studentController = {
 
   deleteVent: asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Vent ID' });
+    }
+
     const vent = await Vent.findOneAndDelete({
       _id: id,
       StudentId: req.user._id,
@@ -189,15 +352,24 @@ const studentController = {
   // FEEDBACKS
   createFeedback: asyncHandler(async (req, res) => {
     const { Rating, Comment, Type } = req.body;
-    if (!Rating)
-      return res.status(400).json({ message: 'Rating is required' });
+
+    // Validate Rating
+    if (Rating === undefined || Rating < 1 || Rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    // Validate Type
+    const validTypes = ['session', 'platform', 'content', 'SOS'];
+    if (!Type || !validTypes.includes(Type)) {
+      return res.status(400).json({ message: 'Invalid or missing feedback type' });
+    }
 
     const feedback = await Feedback.create({
       StudentId: req.user._id,
       Rating,
       Comment,
       Type,
-      CreatedAt: new Date(),
+      // CreatedAt: new Date(),
     });
 
     res.status(201).json(feedback);
@@ -207,12 +379,44 @@ const studentController = {
     const feedbacks = await Feedback.find({ StudentId: req.user._id }).sort({
       CreatedAt: -1,
     });
+
+    if (!feedbacks) {
+      return res.status(404).json({ message: 'Feedback not found' });
+    }
+
     res.status(200).json(feedbacks);
   }),
 
   updateFeedback: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
+
+    // ID validation
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Feedback ID' });
+    }
+
+    const allowedFields = ['Rating', 'Comment', 'Type'];
+    const isValidUpdate = Object.keys(updateData).every(field =>
+      allowedFields.includes(field)
+    );
+
+    if (!isValidUpdate) {
+      return res.status(400).json({ message: 'Invalid fields in update' });
+    }
+
+    // Field-level validation
+    if (updateData.Rating && (updateData.Rating < 1 || updateData.Rating > 5)) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    if (updateData.Type) {
+      const validTypes = ['session', 'platform', 'content', 'SOS'];
+      if (!validTypes.includes(updateData.Type)) {
+        return res.status(400).json({ message: 'Invalid feedback type' });
+      }
+    }
+
     const feedback = await Feedback.findOneAndUpdate(
       { _id: id, StudentId: req.user._id },
       updateData,
@@ -224,6 +428,11 @@ const studentController = {
 
   deleteFeedback: asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Feedback ID' });
+    }
+
     const deleted = await Feedback.findOneAndDelete({
       _id: id,
       StudentId: req.user._id,
@@ -240,6 +449,25 @@ const studentController = {
         .status(400)
         .json({ message: 'AlertedTo array with at least one entry required' });
 
+    // Validate each AlertedTo entry as ObjectId
+    const invalidIds = AlertedTo.filter(
+      (id) => !mongoose.Types.ObjectId.isValid(id)
+    );
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        message: 'One or more AlertedTo IDs are invalid',
+        invalidIds,
+      });
+    }
+
+    // Validate Method
+    const validMethods = ['call', 'sms', 'app'];
+    if (!Method || !validMethods.includes(Method)) {
+      return res.status(400).json({
+        message: 'Method must be one of: call, sms, app',
+      });
+    }
+
     const sos = await SOSLog.create({
       StudentId: req.user._id,
       AlertedTo,
@@ -254,11 +482,21 @@ const studentController = {
     const soslogs = await SOSLog.find({ StudentId: req.user._id }).sort({
       TriggeredAt: -1,
     });
+
+    if (!soslogs) {
+      return res.status(404).json({ message: 'SOS not found' });
+    }
+
     res.status(200).json(soslogs);
   }),
 
   deleteSOSLog: asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid SOS Log ID' });
+    }
+
     const deleted = await SOSLog.findOneAndDelete({
       _id: id,
       StudentId: req.user._id,
@@ -269,12 +507,34 @@ const studentController = {
 
   // WELLNESS (MOOD)
   addMoodEntry: asyncHandler(async (req, res) => {
-    const { Date, Mood, Note, Tags } = req.body;
+    const { Date: dateString, Mood, Note, Tags } = req.body;
+    const validMoods = ['happy', 'sad', 'stressed', 'anxious', 'motivated'];
+    const validTags = ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic'];
+
     if (!Mood) return res.status(400).json({ message: 'Mood is required' });
+
+    if (!validMoods.includes(Mood)) {
+      return res.status(400).json({ message: 'Invalid mood value' });
+    }
+
+    if (Tags && (!Array.isArray(Tags) || Tags.some(tag => !validTags.includes(tag)))) {
+      return res.status(400).json({ message: 'Invalid tags provided' });
+    }
+
+    if (dateString && isNaN(Date.parse(dateString))) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    const moodEntry = {
+      Date: dateString ? new Date(dateString) : new Date(),
+      Mood,
+      Note,
+      Tags,
+    };
 
     const updatedStudent = await Student.findByIdAndUpdate(
       req.user._id,
-      { $push: { MoodEntries: { Date, Mood, Note, Tags } } },
+      { $push: { MoodEntries: moodEntry } },
       { new: true }
     );
 
@@ -283,20 +543,46 @@ const studentController = {
 
   getMoodEntries: asyncHandler(async (req, res) => {
     const student = await Student.findById(req.user._id);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
     res.status(200).json(student.MoodEntries);
   }),
 
   updateMoodEntry: asyncHandler(async (req, res) => {
     const index = parseInt(req.params.index, 10);
     const { Date, Mood, Note, Tags } = req.body;
+
+    const validMoods = ['happy', 'sad', 'stressed', 'anxious', 'motivated'];
+    const validTags = ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic'];
+
     if (isNaN(index))
       return res.status(400).json({ message: 'Invalid index' });
 
     const student = await Student.findById(req.user._id);
-    if (!student.MoodEntries[index])
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (index < 0 || index >= student.MoodEntries.length)
       return res.status(404).json({ message: 'Mood entry not found' });
 
-    if (Date) student.MoodEntries[index].Date = Date;
+    if (Date && isNaN(Date.parse(Date))) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    if (Mood && !validMoods.includes(Mood)) {
+      return res.status(400).json({ message: 'Invalid mood value' });
+    }
+
+    if (Tags && (!Array.isArray(Tags) || Tags.some(tag => !validTags.includes(tag)))) {
+      return res.status(400).json({ message: 'Invalid tags provided' });
+    }
+
+    if (Date) student.MoodEntries[index].Date = new Date(Date);
     if (Mood) student.MoodEntries[index].Mood = Mood;
     if (Note) student.MoodEntries[index].Note = Note;
     if (Tags) student.MoodEntries[index].Tags = Tags;
@@ -311,7 +597,12 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid index' });
 
     const student = await Student.findById(req.user._id);
-    if (!student.MoodEntries[index])
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (index < 0 || index >= student.MoodEntries.length)
       return res.status(404).json({ message: 'Mood entry not found' });
 
     student.MoodEntries.splice(index, 1);
@@ -323,9 +614,26 @@ const studentController = {
   // WELLNESS (HABIT)
   addHabitLog: asyncHandler(async (req, res) => {
     const { Date, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
-    if (!Date) return res.status(400).json({ message: 'Date is required' });
+    if (!Date || isNaN(Date.parse(Date))) {
+      return res.status(400).json({ message: 'Valid Date is required' });
+    }
 
-    const habitLog = { Date, Exercise, Hydration, ScreenTime, SleepHours };
+    if (
+      Hydration !== undefined && (typeof Hydration !== 'number' || Hydration < 0 || Hydration > 10000) ||
+      ScreenTime !== undefined && (typeof ScreenTime !== 'number' || ScreenTime < 0 || ScreenTime > 24) ||
+      SleepHours !== undefined && (typeof SleepHours !== 'number' || SleepHours < 0 || SleepHours > 24) ||
+      Exercise !== undefined && typeof Exercise !== 'boolean'
+    ) {
+      return res.status(400).json({ message: 'Invalid values provided' });
+    }
+
+    const habitLog = {
+      Date: new Date(Date),
+      Exercise: Exercise ?? false,
+      Hydration: Hydration ?? 0,
+      ScreenTime: ScreenTime ?? 0,
+      SleepHours: SleepHours ?? 0,
+    };
 
     const updatedStudent = await Student.findByIdAndUpdate(
       req.user._id,
@@ -333,32 +641,64 @@ const studentController = {
       { new: true }
     );
 
+    if (!updatedStudent) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
     res.status(201).json(updatedStudent.HabitLogs);
   }),
 
   getHabitLogs: asyncHandler(async (req, res) => {
     const student = await Student.findById(req.user._id);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
     res.status(200).json(student.HabitLogs);
   }),
 
   updateHabitLog: asyncHandler(async (req, res) => {
     const index = parseInt(req.params.index, 10);
-    const { Date, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
+    const { Date: dateString, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
+
     if (isNaN(index))
       return res.status(400).json({ message: 'Invalid index' });
 
     const student = await Student.findById(req.user._id);
-    if (!student.HabitLogs[index])
-      return res.status(404).json({ message: 'Habit log not found' });
 
-    if (Date) student.HabitLogs[index].Date = Date;
-    if (Exercise) student.HabitLogs[index].Exercise = Exercise;
-    if (Hydration) student.HabitLogs[index].Hydration = Hydration;
-    if (ScreenTime) student.HabitLogs[index].ScreenTime = ScreenTime;
-    if (SleepHours) student.HabitLogs[index].SleepHours = SleepHours;
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (index < 0 || index >= student.HabitLogs.length) {
+      return res.status(404).json({ message: 'Habit log not found' });
+    }
+
+    if (dateString && isNaN(Date.parse(dateString))) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    if (
+      Hydration !== undefined && (typeof Hydration !== 'number' || Hydration < 0 || Hydration > 10000) ||
+      ScreenTime !== undefined && (typeof ScreenTime !== 'number' || ScreenTime < 0 || ScreenTime > 24) ||
+      SleepHours !== undefined && (typeof SleepHours !== 'number' || SleepHours < 0 || SleepHours > 24) ||
+      Exercise !== undefined && typeof Exercise !== 'boolean'
+    ) {
+      return res.status(400).json({ message: 'Invalid values provided' });
+    }
+
+    const log = student.HabitLogs[index];
+    if (!log)
+      return res.status(404).json({ message: 'Habit log not found' });
+    if (dateString) log.Date = new Date(dateString);
+    if (Exercise !== undefined) log.Exercise = Exercise;
+    if (Hydration !== undefined) log.Hydration = Hydration;
+    if (ScreenTime !== undefined) log.ScreenTime = ScreenTime;
+    if (SleepHours !== undefined) log.SleepHours = SleepHours;
 
     await student.save();
-    res.status(200).json(student.HabitLogs[index]);
+    res.status(200).json(log);
   }),
 
   deleteHabitLog: asyncHandler(async (req, res) => {
@@ -367,6 +707,15 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid index' });
 
     const student = await Student.findById(req.user._id);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (index < 0 || index >= student.HabitLogs.length) {
+      return res.status(404).json({ message: 'Habit log not found' });
+    }
+
     if (!student.HabitLogs[index])
       return res.status(404).json({ message: 'Habit log not found' });
 
@@ -379,11 +728,21 @@ const studentController = {
   // RESOURCES (VIEW ONLY)
   getResources: asyncHandler(async (req, res) => {
     const resources = await Resource.find();
+
+    if (!resources) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
     res.status(200).json(resources);
   }),
 
   getResourceById: asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Resource ID' });
+    }
+
     const resource = await Resource.findById(id);
     if (!resource) return res.status(404).json({ message: 'Resource not found' });
     res.status(200).json(resource);
@@ -395,6 +754,15 @@ const studentController = {
 
     if (!TargetId || !Reason) {
       return res.status(400).json({ message: 'TargetId and Reason are required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(TargetId)) {
+      return res.status(400).json({ message: 'Invalid TargetId format' });
+    }
+
+    const validReasons = ['spam', 'abuse', 'offensive', 'harassment', 'misinformation'];
+    if (!validReasons.includes(Reason)) {
+      return res.status(400).json({ message: 'Invalid Reason value' });
     }
 
     const report = await Report.create({
@@ -409,18 +777,27 @@ const studentController = {
   getMyReports: asyncHandler(async (req, res) => {
     const reports = await Report.find({ ReporterId: req.user._id })
       .sort({ createdAt: -1 }); // Show newest first
+
+    if (!reports) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
     res.status(200).json(reports);
   }),
 
   deleteReport: asyncHandler(async (req, res) => {
     const { id } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Report ID' });
+    }
+
     const report = await Report.findById(id);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
 
-    // Optional: Ensure only the user who created the report can delete it
+    // Ensure only the user who created the report can delete it
     if (!report.ReporterId.equals(req.user._id)) {
       return res.status(403).json({ message: 'Unauthorized to delete this report' });
     }

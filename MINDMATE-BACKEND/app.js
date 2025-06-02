@@ -10,15 +10,20 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json()); // To parse JSON body
 
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Routes
 const studentRoutes = require('./src/routes/studentRoutes');
-const counselorRoutes = require('./src/routes/counselorPsychologistRoutes');
+const counselorPsychologistRoutes = require('./src/routes/counselorPsychologistRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 
 // Route Mapping
 app.use('/api/students', studentRoutes);
-app.use('/api/counselors', counselorRoutes);
-app.use('/api/admin', adminRoutes);
+// app.use('/api/counselorPsychologist', counselorPsychologistRoutes);
+// app.use('/api/admin', adminRoutes);
 
 // Error Middleware
 const errorHandler = require('./src/middlewares/errorMiddleware');
