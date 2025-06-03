@@ -35,6 +35,10 @@ const studentController = {
         message: 'Password must be at least 8 characters long and contain at least one letter and one number',
       });
     }
+    // Phone number must be exactly 10 digits
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
+    }
     const existingStudent = await Student.findOne({ AliasId });
     if (existingStudent)
       return res.status(400).json({ message: 'Alias ID already in use' });
@@ -193,13 +197,6 @@ const studentController = {
       return res.status(400).json({ message: 'Both current and new passwords are required' });
     }
 
-    // Password strength for new password
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
-      return res.status(400).json({
-        message: 'New password must be at least 8 characters long and include at least one letter and one number',
-      });
-    }
-
     const student = await Student.findById(req.user._id);
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -208,6 +205,13 @@ const studentController = {
     const isMatch = await bcrypt.compare(currentPassword, student.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Password strength for new password
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+      return res.status(400).json({
+        message: 'New password must be at least 8 characters long and include at least one letter and one number',
+      });
     }
 
     // Check if new password is the same as current password

@@ -104,9 +104,15 @@ const Login = () => {
                 required
               />
             </Form.Group>
-            <Button variant="warning" className="mb-3" onClick={handlePhoneAction}>
-              Submit
-            </Button>
+            <div className="d-flex gap-2">
+              <Button variant="warning" onClick={handlePhoneAction}>
+                Submit
+              </Button>
+              <Button variant="secondary" onClick={() => setShowPhone(false)}>
+                Back
+              </Button>
+            </div>
+
           </>
         )}
 
