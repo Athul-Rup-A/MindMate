@@ -12,6 +12,9 @@ const studentAuth = [auth, permitRoles('student')];
 //Auth
 router.post('/signup', StudentController.signupStudent);
 router.post('/login', StudentController.loginStudent);
+router.post('/forgot-password', StudentController.forgotPasswordByPhone);
+router.post('/forgot-aliasid', StudentController.forgotAliasIdByPhone);
+router.put('/set-new-password', StudentController.setNewPassword);
 
 // Profile
 router.get('/profile', studentAuth, StudentController.getProfile);

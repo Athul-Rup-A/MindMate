@@ -5,6 +5,14 @@ const { Schema, ObjectId } = mongoose;
 const StudentSchema = new Schema({
   AliasId: { type: String, required: true, unique: true },
   PasswordHash: { type: String, required: true },
+  isTempPassword: {
+    type: Boolean,
+    default: false,
+  },
+  tempPasswordHash: { type: String, default: null },
+  tempPasswordExpires: {
+    type: Date,
+  },
   Feedbacks: [{ type: Schema.Types.ObjectId, ref: 'Feedback' }],
   MoodEntries: [{
     Date: { type: Date, default: Date.now },
@@ -19,7 +27,11 @@ const StudentSchema = new Schema({
       enum: ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic']
     }],
   }],
-  Language: { type: String, default: 'en' },
+  Phone: {
+  type: String,
+  required: true,
+  unique: true, 
+  },
   Role: { type: String, enum: ['student'], default: 'student' },
   VentPosts: [{ type: Schema.Types.ObjectId, ref: 'VentWall' }],
   Status: {

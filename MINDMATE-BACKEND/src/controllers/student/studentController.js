@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
+// Simulated SMS sending function
+const sendSMS = (phone, message) => {
+  console.log(`Sending SMS to ${phone}: ${message}`);
+};
+
 const Student = require('../../models/Student');
 const Appointment = require('../../models/Appointment');
 const Vent = require('../../models/VentWall');
@@ -15,10 +20,10 @@ const studentController = {
 
   // AUTH
   signupStudent: asyncHandler(async (req, res) => {
-    const { AliasId, password } = req.body;
+    const { AliasId, password, phone } = req.body;
 
-    if (!AliasId || !password) {
-      return res.status(400).json({ message: 'Alias ID and password are required' });
+    if (!AliasId || !password || !phone) {
+      return res.status(400).json({ message: 'Alias ID, password and phone are required' });
     }
     // AliasId validation: alphanumeric and 4-20 characters
     if (!/^[a-zA-Z0-9_]{4,20}$/.test(AliasId)) {
@@ -34,10 +39,16 @@ const studentController = {
     if (existingStudent)
       return res.status(400).json({ message: 'Alias ID already in use' });
 
+    const existingPhone = await Student.findOne({ Phone: phone });
+    if (existingPhone) {
+      return res.status(409).json({ message: 'Phone number is already registered' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newStudent = await Student.create({
       AliasId,
       PasswordHash: hashedPassword,
+      Phone: phone,
     });
 
     const token = generateToken({ _id: newStudent._id, role: 'student' });
@@ -52,12 +63,106 @@ const studentController = {
     const student = await Student.findOne({ AliasId });
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
-    const isMatch = await bcrypt.compare(password, student.PasswordHash);
-    if (!isMatch)
-      return res.status(401).json({ message: 'Invalid credentials' });
+    // const isMatch = await bcrypt.compare(password, student.PasswordHash);
+    // if (!isMatch)
+    //   return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = generateToken({ _id: student._id, role: 'student' });
-    res.status(200).json({ token, student });
+    let isMatch = false;
+
+    if (student.isTempPassword) {
+      // 1. Check if temp password is expired    
+      if (!student.tempPasswordExpires || student.tempPasswordExpires < Date.now()) {
+        return res.status(403).json({ message: 'Temporary password expired. Please reset again.' });
+      }
+
+      // 2. Compare with tempPasswordHash (new separate field)
+      isMatch = await bcrypt.compare(password, student.tempPasswordHash);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // 3. Invalidate temp password after one use
+      student.isTempPassword = false;
+      student.tempPasswordExpires = null;
+      student.tempPasswordHash = null; // clear temp hash as well
+      await student.save();
+
+      // 4. Return token + flag to force password change on client side
+      return res.status(200).json({
+        token: generateToken({ _id: student._id, role: 'student' }),
+        student,
+        mustChangePassword: true,
+        message: 'Logged in with temporary password. Please change your password immediately.',
+      });
+    } else {
+      // 5. Check permanent password normally
+      isMatch = await bcrypt.compare(password, student.PasswordHash);
+      if (!isMatch)
+        return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = generateToken({ _id: student._id, role: 'student' });
+      return res.status(200).json({ token, student });
+    }
+  }),
+
+  forgotAliasIdByPhone: asyncHandler(async (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+
+    const student = await Student.findOne({ Phone: phone });
+    if (!student) return res.status(404).json({ message: 'No account found for this phone number' });
+
+    sendSMS(phone, `Your Alias ID (Username) is: ${student.AliasId}`);
+    res.status(200).json({ message: 'Alias ID sent to your phone number' });
+  }),
+
+  forgotPasswordByPhone: asyncHandler(async (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+
+    const student = await Student.findOne({ Phone: phone });
+    if (!student) return res.status(404).json({ message: 'No account found for this phone number' });
+
+    const tempPassword = Math.random().toString(36).slice(-8); // Simple temp password
+    const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
+
+    // 6. Save temp password hash in separate field, do NOT overwrite permanent PasswordHash
+    student.tempPasswordHash = hashedTempPassword;
+    student.isTempPassword = true; // Temporary one-time password flag
+    student.tempPasswordExpires = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+    await student.save();
+
+    sendSMS(phone, `Your temporary password is: ${tempPassword}. It will expire in 5 minutes and can be used only once.`);
+    res.status(200).json({ message: 'Temporary password sent to your phone number' });
+  }),
+
+  setNewPassword: asyncHandler(async (req, res) => {
+    const { studentId, newPassword } = req.body;
+    if (!studentId || !newPassword) {
+      return res.status(400).json({ message: 'Student ID and new password required' });
+    }
+
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters long and contain at least one letter and one number',
+      });
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    const isSame = await bcrypt.compare(newPassword, student.PasswordHash);
+    if (isSame) {
+      return res.status(400).json({ message: 'New password must be different from the old one.' });
+    }
+
+    student.PasswordHash = await bcrypt.hash(newPassword, 10);
+    student.isTempPassword = false;
+    student.tempPasswordExpires = null;
+    student.tempPasswordHash = null; // clear temp hash as well
+
+    await student.save();
+    res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
   }),
 
   // PROFILE
@@ -105,6 +210,12 @@ const studentController = {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
 
+    // Check if new password is the same as current password
+    const isSameAsOld = await bcrypt.compare(newPassword, student.PasswordHash);
+    if (isSameAsOld) {
+      return res.status(400).json({ message: 'New password must be different from the old one' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     student.PasswordHash = await bcrypt.hash(newPassword, salt);
 
@@ -115,7 +226,7 @@ const studentController = {
 
   updateProfile: asyncHandler(async (req, res) => {
     const updates = req.body;
-    const allowedFields = ['Language', 'Status'];
+    const allowedFields = ['Phone', 'Status'];
     const updateKeys = Object.keys(updates);
 
     // Check for invalid fields
@@ -125,8 +236,8 @@ const studentController = {
     }
 
     // Validate Language (if present)
-    if (updates.Language && typeof updates.Language !== 'string') {
-      return res.status(400).json({ message: 'Language must be a string' });
+    if (updates.Phone && !/^\+?\d{7,15}$/.test(updates.Phone)) {
+      return res.status(400).json({ message: 'Phone must be a valid phone number' });
     }
 
     // Validate Status (if present)
