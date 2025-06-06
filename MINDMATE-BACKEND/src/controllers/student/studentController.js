@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
+const sendEmail = require('../../utils/autoEmail')
 // Simulated SMS sending function
 const sendSMS = (phone, message) => {
   console.log(`Sending SMS to ${phone}: ${message}`);
@@ -15,14 +16,15 @@ const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
 const Resource = require('../../models/Resource');
 const Report = require('../../models/Report');
+const CounselorPsychologist = require('../../models/CounselorPsychologist');
 
 const studentController = {
 
   // AUTH
   signupStudent: asyncHandler(async (req, res) => {
-    const { AliasId, password, phone } = req.body;
+    const { AliasId, password, phone, email } = req.body;
 
-    if (!AliasId || !password || !phone) {
+    if (!AliasId || !password || !phone || !email) {
       return res.status(400).json({ message: 'Alias ID, password and phone are required' });
     }
     // AliasId validation: alphanumeric and 4-20 characters
@@ -39,6 +41,10 @@ const studentController = {
     if (!/^\d{10}$/.test(phone)) {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
     }
+    // Email validation
+    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(req.body.email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
     const existingStudent = await Student.findOne({ AliasId });
     if (existingStudent)
       return res.status(400).json({ message: 'Alias ID already in use' });
@@ -48,11 +54,17 @@ const studentController = {
       return res.status(409).json({ message: 'Phone number is already registered' });
     }
 
+    const existingEmail = await Student.findOne({ Email: email });
+    if (existingEmail) {
+      return res.status(409).json({ message: 'Email is already registered' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newStudent = await Student.create({
       AliasId,
       PasswordHash: hashedPassword,
       Phone: phone,
+      Email: email,
     });
 
     const token = generateToken({ _id: newStudent._id, role: 'student' });
@@ -66,10 +78,6 @@ const studentController = {
     }
     const student = await Student.findOne({ AliasId });
     if (!student) return res.status(404).json({ message: 'Student not found' });
-
-    // const isMatch = await bcrypt.compare(password, student.PasswordHash);
-    // if (!isMatch)
-    //   return res.status(401).json({ message: 'Invalid credentials' });
 
     let isMatch = false;
 
@@ -108,7 +116,6 @@ const studentController = {
       return res.status(200).json({ token, student });
     }
   }),
-
   forgotAliasIdByPhone: asyncHandler(async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: 'Phone number is required' });
@@ -116,8 +123,19 @@ const studentController = {
     const student = await Student.findOne({ Phone: phone });
     if (!student) return res.status(404).json({ message: 'No account found for this phone number' });
 
+    // Send SMS
     sendSMS(phone, `Your Alias ID (Username) is: ${student.AliasId}`);
-    res.status(200).json({ message: 'Alias ID sent to your phone number' });
+
+    // Send Email if available
+    if (student.Email) {
+      await sendEmail({
+        to: student.Email,
+        subject: 'MindMate - Your Alias ID',
+        html: `<p>Hello,</p><p>Your Alias ID (username) is: <strong>${student.AliasId}</strong></p>`,
+      });
+    }
+
+    res.status(200).json({ message: 'Alias ID sent to your registered phone number and email.' });
   }),
 
   forgotPasswordByPhone: asyncHandler(async (req, res) => {
@@ -130,14 +148,30 @@ const studentController = {
     const tempPassword = Math.random().toString(36).slice(-8); // Simple temp password
     const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
 
-    // 6. Save temp password hash in separate field, do NOT overwrite permanent PasswordHash
+    // Save temp password hash and flags
     student.tempPasswordHash = hashedTempPassword;
-    student.isTempPassword = true; // Temporary one-time password flag
-    student.tempPasswordExpires = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+    student.isTempPassword = true;
+    student.tempPasswordExpires = Date.now() + 5 * 60 * 1000; // 5 mins expiry
     await student.save();
 
-    sendSMS(phone, `Your temporary password is: ${tempPassword}. It will expire in 5 minutes and can be used only once.`);
-    res.status(200).json({ message: 'Temporary password sent to your phone number' });
+    // Send SMS
+    sendSMS(phone, `Your temporary password is: ${tempPassword}. It expires in 5 minutes.`);
+
+    // Send Email if available
+    if (student.Email) {
+      await sendEmail({
+        to: student.Email,
+        subject: 'MindMate - Temporary Password',
+        html: `
+        <p>Hello,</p>
+        <p>Your temporary password is: <strong>${tempPassword}</strong></p>
+        <p>This password will expire in 5 minutes and can be used only once.</p>
+        <p>Please log in and reset your password immediately.</p>
+      `,
+      });
+    }
+
+    res.status(200).json({ message: 'Temporary password sent to your registered phone number and email.' });
   }),
 
   setNewPassword: asyncHandler(async (req, res) => {
@@ -167,6 +201,15 @@ const studentController = {
 
     await student.save();
     res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
+  }),
+
+  getAvailableCounselorPsychologist: asyncHandler(async (req, res) => {
+    const counselorPsychologist = await CounselorPsychologist.find({
+      Status: 'active',
+      ApprovedByAdmin: true,
+    }).select('-PasswordHash');
+
+    res.status(200).json(counselorPsychologist);
   }),
 
   // PROFILE
@@ -239,7 +282,7 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid update fields' });
     }
 
-    // Validate Language (if present)
+    // Validate Phone
     if (updates.Phone && !/^\+?\d{7,15}$/.test(updates.Phone)) {
       return res.status(400).json({ message: 'Phone must be a valid phone number' });
     }
@@ -258,13 +301,13 @@ const studentController = {
 
   // APPOINTMENTS
   createAppointment: asyncHandler(async (req, res) => {
-    const { CounselorId, SlotDate, SlotStartTime, SlotEndTime } = req.body;
-    if (!CounselorId || !SlotDate || !SlotStartTime || !SlotEndTime) {
+    const { CounselorPsychologistId, SlotDate, SlotStartTime, SlotEndTime } = req.body;
+    if (!CounselorPsychologistId || !SlotDate || !SlotStartTime || !SlotEndTime) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(CounselorId)) {
+    if (!mongoose.Types.ObjectId.isValid(CounselorPsychologistId)) {
       return res.status(400).json({ message: 'Invalid Counselor ID' });
     }
 
@@ -286,7 +329,7 @@ const studentController = {
     }
 
     const appointment = await Appointment.create({
-      CounselorId,
+      CounselorPsychologistId,
       SlotDate: dateObj,
       SlotStartTime,
       SlotEndTime,

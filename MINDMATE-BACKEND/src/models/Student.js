@@ -28,10 +28,11 @@ const StudentSchema = new Schema({
     }],
   }],
   Phone: {
-  type: String,
-  required: true,
-  unique: true, 
+    type: String,
+    required: true,
+    unique: true,
   },
+  Email: { type: String, required: true, unique: true },
   Role: { type: String, enum: ['student'], default: 'student' },
   VentPosts: [{ type: Schema.Types.ObjectId, ref: 'VentWall' }],
   Status: {

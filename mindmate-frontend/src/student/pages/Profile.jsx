@@ -2,215 +2,177 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import authHeader from '../../config/authHeader';
-import { Container, Form, Button, Spinner, Alert, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Profile = () => {
-  const [profile, setProfile] = useState({ AliasId: '', Phone: '', Status: '' });
+  const [profile, setProfile] = useState({ AliasId: '', Phone: '' });
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const navigate = useNavigate();
-
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-  });
-  const [passwordChanging, setPasswordChanging] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
-  const fetchProfile = async () => {
-    try {
-      const response = await axios.get(`${BASE_URL}/profile`, authHeader());
-      const data = response.data;
-      setProfile({
-        AliasId: data.AliasId || '',
-        Phone: data.Phone || '',
-        Status: data.Status || '',
-      });
-    } catch (err) {
-      console.error('Error loading profile:', err);
-      alert('Failed to load profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-
-    // Phone validation: exactly 10 digits
-    if (!/^\d{10}$/.test(profile.Phone)) {
-      alert('Phone number must be exactly 10 digits');
-      return;
-    }
-
-    try {
-      // Send only editable fields (Phone)
-      await axios.put(`${BASE_URL}/profile`, { Phone: profile.Phone }, authHeader());
-      alert('Profile updated successfully!');
-      setEditMode(false);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      alert('Failed to update profile');
-    }
-  };
-
-  const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
-  };
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    setPasswordChanging(true);
-    setMessage(null);
-    try {
-      const response = await axios.put(`${BASE_URL}/change-profile-password`, passwordData, authHeader());
-      setMessage({ type: 'success', text: response.data.message });
-      setPasswordData({ currentPassword: '', newPassword: '' });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err) {
-      console.error('Error changing password:', err);
-      setMessage({
-        type: 'danger',
-        text: err.response?.data?.message || 'Failed to change password',
-      });
-      setTimeout(() => setMessage(null), 5000);
-    } finally {
-      setPasswordChanging(false);
-    }
-  };
-
-  const handleLogoutClick = () => setShowLogoutModal(true);
-  const handleCancelLogout = () => setShowLogoutModal(false);
-  const handleConfirmLogout = () => {
-    setShowLogoutModal(false);
-    // alert('Logged out successfully');
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/profile`, authHeader());
+        setProfile({
+          AliasId: res.data.AliasId || '',
+          Phone: res.data.Phone || '',
+        });
+      } catch (err) {
+        toast.error('Failed to fetch profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProfile();
   }, []);
 
-  if (loading) {
-    return (
-      <Container className="mt-5 text-center">
-        <Spinner animation="border" />
-        <p>Loading profile...</p>
-      </Container>
-    );
-  }
+  const profileSchema = Yup.object().shape({
+    Phone: Yup.string().matches(/^\d{10}$/, 'Phone must be 10 digits').required('Required'),
+  });
+
+  const passwordSchema = Yup.object().shape({
+    currentPassword: Yup.string().required('Required'),
+    newPassword: Yup.string()
+      .required('Required')
+      .matches(
+        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
+        'At least 8 characters, 1 letter & 1 number'
+      ),
+  });
+
+  const goHome = () => navigate('/home');
 
   return (
-    <Container className="mt-5" style={{ maxWidth: '500px' }}>
-      <h2>My Profile</h2>
-      <Form>
-        <Form.Group className="mb-3" controlId="formAliasId">
-          <Form.Label>Alias ID</Form.Label>
-          <Form.Control
-            type="text"
-            name="AliasId"
-            value={profile.AliasId}
-            disabled
-          />
-        </Form.Group>
+    <Container
+      className="py-5"
+      style={{ background: 'linear-gradient(to right, #e3f2fd,rgb(253, 247, 189))', minHeight: '100vh' }}
+    >
+      <ToastContainer position="top-right" autoClose={3000} />
 
-        <Form.Group className="mb-3" controlId="formStatus">
-          <Form.Label>Status</Form.Label>
-          <Form.Control
-            type="text"
-            name="Status"
-            value={profile.Status}
-            disabled
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3" controlId="formPhone">
-          <Form.Label>Phone</Form.Label>
-          <Form.Control
-            type="text"
-            name="Phone"
-            value={profile.Phone}
-            disabled={!editMode}
-            onChange={handleChange}
-          />
-        </Form.Group>
-
-        {!editMode ? (
-          <Button variant="primary" onClick={() => setEditMode(true)}>
-            Edit
-          </Button>
-        ) : (
-          <>
-            <Button variant="success" className="me-2" onClick={handleSave}>
-              Save
-            </Button>
-            <Button variant="secondary" onClick={() => setEditMode(false)}>
-              Cancel
-            </Button>
-          </>
-        )}
-      </Form>
-
-      <hr />
-
-      <h4>Change Password</h4>
-      {message && <Alert variant={message.type}>{message.text}</Alert>}
-      <Form onSubmit={handlePasswordChange}>
-        <Form.Group className="mb-3" controlId="currentPassword">
-          <Form.Label>Current Password</Form.Label>
-          <Form.Control
-            type="password"
-            value={passwordData.currentPassword}
-            onChange={(e) =>
-              setPasswordData({ ...passwordData, currentPassword: e.target.value })
-            }
-            required
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3" controlId="newPassword">
-          <Form.Label>New Password</Form.Label>
-          <Form.Control
-            type="password"
-            value={passwordData.newPassword}
-            onChange={(e) =>
-              setPasswordData({ ...passwordData, newPassword: e.target.value })
-            }
-            required
-          />
-        </Form.Group>
-
-        <Button variant="warning" type="submit" disabled={passwordChanging}>
-          {passwordChanging ? 'Updating...' : 'Change Password'}
+      {/* Top Right Home Button */}
+      <div className="d-flex justify-content-end mb-4">
+        <Button variant="outline-dark" onClick={goHome}>
+          Home
         </Button>
-      </Form>
+      </div>
 
-      <Button variant="danger" className="mt-3" onClick={handleLogoutClick}>
-        Logout
-      </Button>
+      <Row className="g-4">
+        {/* Profile Edit */}
+        <Col md={6}>
+          <Card className="p-4 shadow rounded-4">
+            <h4 className="mb-3 fw-bold text-center">My Profile</h4>
+            <Formik
+              initialValues={{ Phone: profile.Phone }}
+              enableReinitialize
+              validationSchema={profileSchema}
+              onSubmit={async (values) => {
+                if (values.Phone === profile.Phone) {
+                  toast.info('No changes made');
+                  return;
+                }
+                try {
+                  await axios.put(`${BASE_URL}/profile`, values, authHeader());
+                  toast.success('Profile updated successfully');
+                  setProfile((prev) => ({ ...prev, Phone: values.Phone }));
+                } catch (err) {
+                  toast.error('Error updating profile, try a new one');
+                }
+              }}
+            >
+              {({ isSubmitting }) => (
+                <Form>
+                  <div className="mb-3">
+                    <label className="form-label">Alias ID</label>
+                    <input type="text" className="form-control" value={profile.AliasId} disabled />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Phone</label>
+                    <Field name="Phone" className="form-control" />
+                    <div className="text-danger small">
+                      <ErrorMessage name="Phone" />
+                    </div>
+                  </div>
+                  <Button type="submit" variant="primary" disabled={isSubmitting} className="w-100">
+                    Save Changes
+                  </Button>
+                </Form>
+              )}
+            </Formik>
+          </Card>
+        </Col>
 
-      <Modal show={showLogoutModal} onHide={handleCancelLogout} centered>
-        <Modal.Header className="justify-content-center border-0">
-          <Modal.Title className="text-center w-100">
-            Are you sure you want to log out?
-          </Modal.Title>
-        </Modal.Header>
-        {/* <Modal.Body className="text-center">
-  <p className="fs-5">Are you sure you want to log out?</p>
-</Modal.Body> */}
-        <Modal.Footer className="d-flex flex-column gap-2">
-          <Button variant="danger" onClick={handleConfirmLogout} className="w-50">
-            Yes
-          </Button>
-          <Button variant="secondary" onClick={handleCancelLogout} className="w-50">
-            No
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        {/* Password Change */}
+        <Col md={6}>
+          <Card className="p-4 shadow rounded-4">
+            <h4 className="mb-3 fw-bold text-center">Change Password</h4>
+            <Formik
+              initialValues={{ currentPassword: '', newPassword: '' }}
+              validationSchema={passwordSchema}
+              onSubmit={async (values, { resetForm }) => {
+                try {
+                  const res = await axios.put(`${BASE_URL}/change-profile-password`, values, authHeader());
+                  toast.success(res.data.message);
+                  resetForm();
+                } catch (err) {
+                  toast.error(err.response?.data?.message || 'Failed to change password');
+                }
+              }}
+            >
+              {({ isSubmitting }) => (
+                <Form>
+                  <div className="mb-3">
+                    <label className="form-label">Current Password</label>
+                    <div className="input-group">
+                      <Field
+                        name="currentPassword"
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        className="form-control"
+                      />
+                      <span className="input-group-text" onClick={() => setShowCurrentPassword(prev => !prev)} style={{ cursor: 'pointer' }}>
+                        {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
+                    </div>
+                    <div className="text-danger small">
+                      <ErrorMessage name="currentPassword" />
+                    </div>
+                  </div>
 
+                  <div className="mb-3">
+                    <label className="form-label">New Password</label>
+                    <div className="input-group">
+                      <Field
+                        name="newPassword"
+                        type={showNewPassword ? 'text' : 'password'}
+                        className="form-control"
+                      />
+                      <span className="input-group-text" onClick={() => setShowNewPassword(prev => !prev)} style={{ cursor: 'pointer' }}>
+                        {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
+                    </div>
+                    <div className="text-danger small">
+                      <ErrorMessage name="newPassword" />
+                    </div>
+                  </div>
+
+                  <Button type="submit" variant="warning" disabled={isSubmitting} className="w-100">
+                    Change Password
+                  </Button>
+                </Form>
+              )}
+            </Formik>
+          </Card>
+        </Col>
+      </Row>
     </Container>
   );
 };

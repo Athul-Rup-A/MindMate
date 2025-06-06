@@ -9,12 +9,15 @@ const StudentController = require('../controllers/student/studentController');
 const studentAuth = [auth, permitRoles('student')];
 
 
-//Auth
+// Auth
 router.post('/signup', StudentController.signupStudent);
 router.post('/login', StudentController.loginStudent);
 router.post('/forgot-password', StudentController.forgotPasswordByPhone);
 router.post('/forgot-aliasid', StudentController.forgotAliasIdByPhone);
 router.put('/set-new-password', StudentController.setNewPassword);
+
+// CounselorPsychologist-Dash
+router.get('/counselorPsychologist', studentAuth, StudentController.getAvailableCounselorPsychologist);
 
 // Profile
 router.get('/profile', studentAuth, StudentController.getProfile);

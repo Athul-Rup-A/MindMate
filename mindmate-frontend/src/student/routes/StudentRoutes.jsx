@@ -6,6 +6,8 @@ import Signup from '../pages/Signup';
 import Login from '../pages/Login';
 import Profile from '../pages/Profile';
 import ForceResetPassword from '../components/ForceResetPassword';
+import Appointment from '../pages/Appointment';
+import StudentHome from '../pages/StudentHome';
 
 const StudentRoutes = () => (
   <BrowserRouter>
@@ -19,6 +21,24 @@ const StudentRoutes = () => (
       <Route path="/profile" element={
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/appointments" element={
+        <ProtectedRoute>
+          <Appointment />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/appointments/:id" element={
+        <ProtectedRoute>
+          <Appointment />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/home" element={
+        <ProtectedRoute>
+          <StudentHome />
         </ProtectedRoute>
       }
       />

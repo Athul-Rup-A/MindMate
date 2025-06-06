@@ -1,50 +1,64 @@
 import React, { useState } from 'react';
+import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Container, Form, Button } from 'react-bootstrap';
+import { Container, Form, Button, InputGroup, OverlayTrigger, Tooltip, Card } from 'react-bootstrap';
+import { EyeFill, EyeSlashFill, InfoCircle, PersonFill, LockFill, TelephoneFill } from 'react-bootstrap-icons';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ AliasId: '', password: '', phone: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
-  const [phonePurpose, setPhonePurpose] = useState(''); // Forgot-Section
+  const [phonePurpose, setPhonePurpose] = useState('');
   const navigate = useNavigate();
 
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const LoginSchema = Yup.object().shape({
+    AliasId: Yup.string().required('Alias ID is required'),
+    password: Yup.string().required('Password is required'),
+    phone: Yup.string().when([], {
+      is: () => showPhone,
+      then: () =>
+        Yup.string()
+          .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
+          .required('Phone number is required'),
+    }),
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (values, { setSubmitting }) => {
     try {
       const res = await axios.post(`${BASE_URL}/login`, {
-        AliasId: formData.AliasId,
-        password: formData.password,
+        AliasId: values.AliasId,
+        password: values.password,
       });
-
 
       const { token, student, mustChangePassword } = res.data;
       localStorage.setItem('token', token);
 
       if (mustChangePassword) {
-        alert('Logged in with temporary password. Please change your password.');
-        // ⚠ Redirect to password reset with student ID
-        navigate('/force-reset-password', { state: { studentId: student._id } });
+        toast.info('Temporary password. Please reset it.');
+        setTimeout(() => {
+          navigate('/force-reset-password', { state: { studentId: student._id } });
+        }, 3700);
       } else {
-        alert('Login successful!');
-        navigate('/profile');
+        toast.success('Login successful!');
+        setTimeout(() => {
+          navigate('/home');
+        }, 3700);
       }
-
     } catch (err) {
-      console.error('Login error:', err);
-      alert(err.response?.data?.message || 'Login failed');
+      toast.error(err.response?.data?.message || 'Login failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handlePhoneAction = async () => {
-    if (!formData.phone) {
-      alert('Please enter your phone number.');
+  const handlePhoneAction = async (values) => {
+    if (!values.phone) {
+      toast.warning('Please enter your phone number');
       return;
     }
 
@@ -53,109 +67,205 @@ const Login = () => {
         phonePurpose === 'forgot-password' ? 'forgot-password' : 'forgot-aliasid';
 
       const res = await axios.post(`${BASE_URL}/${endpoint}`, {
-        phone: formData.phone,
+        phone: values.phone,
       });
 
-      alert(res.data.message || 'Request successful.');
+      toast.success(res.data.message || 'Request successful.');
       setShowPhone(false);
-      setFormData({ ...formData, phone: '' });
+      setPhonePurpose('');  // Reload the login form correctly
     } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Request failed.');
+      toast.error(err.response?.data?.message || 'Request failed');
     }
   };
 
   return (
-    <Container className="mt-5" style={{ maxWidth: '500px' }}>
-      <h2>Student Login</h2>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3" controlId="loginAliasId">
-          <Form.Label>Alias ID</Form.Label>
-          <Form.Control
-            type="text"
-            name="AliasId"
-            value={formData.AliasId}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+    <div
+      style={{
+        background: 'linear-gradient(to right,rgb(190, 126, 182),rgb(120, 123, 228))',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Segoe UI, sans-serif',
+      }}
+    >
+      <Container style={{ maxWidth: '500px' }}>
+        <Card className="p-4 shadow-lg" style={{ borderRadius: '20px', backgroundColor: 'white' }}>
 
-        <Form.Group className="mb-3" controlId="loginPassword">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
+          {showPhone ? (
+            <>
+              <h3 className="text-center mb-1 fw-bold">
+                {phonePurpose === 'forgot-password' ? 'Reset Password' : 'Recover Alias ID'}
+              </h3>
+              <p className="text-center text-muted mb-4">
+                Enter your registered phone number to receive {phonePurpose === 'forgot-password' ? 'a new temporary password' : 'your Alias ID'} via Email.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-center mb-1 fw-bold text-primary">Welcome Back</h3>
+              <p className="text-center text-muted mb-4">Log in to continue your journey 🌱</p>
+            </>
+          )}
 
-        {showPhone && (
-          <>
-            <Form.Group className="mb-3" controlId="loginPhone">
-              <Form.Label>Phone Number</Form.Label>
-              <Form.Control
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Enter your phone number"
-                required
-              />
-            </Form.Group>
-            <div className="d-flex gap-2">
-              <Button variant="warning" onClick={handlePhoneAction}>
-                Submit
-              </Button>
-              <Button variant="secondary" onClick={() => setShowPhone(false)}>
-                Back
-              </Button>
-            </div>
+          <Formik
+            initialValues={{ AliasId: '', password: '', phone: '' }}
+            validationSchema={LoginSchema}
+            onSubmit={handleLogin}
+          >
+            {({ isSubmitting, values, resetForm }) => (
+              <FormikForm>
+                {!showPhone && (
+                  <>
 
-          </>
-        )}
+                    {/* Alias ID */}
+                    {phonePurpose !== 'forgot-aliasid' && (
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          Alias ID{' '}
+                          <OverlayTrigger
+                            placement="right"
+                            overlay={<Tooltip>Use your chosen nickname or dummy name</Tooltip>}
+                          >
+                            <InfoCircle style={{ cursor: 'pointer' }} />
+                          </OverlayTrigger>
+                        </Form.Label>
+                        <InputGroup>
+                          <InputGroup.Text><PersonFill /></InputGroup.Text>
+                          <Field name="AliasId" as={Form.Control} placeholder="Enter your Alias ID" />
+                        </InputGroup>
+                        <div className="text-danger small mt-1">
+                          <ErrorMessage name="AliasId" />
+                        </div>
+                      </Form.Group>
+                    )}
 
-        {!showPhone && (
-          <>
-            <Button variant="success" type="submit" className="mb-3">
-              Log In
-            </Button>
-            <div className="d-flex flex-column">
-              <Button
-                variant="link"
-                className="p-0 text-start"
-                onClick={() => {
-                  navigate('/signup')
-                }}
-              >
-                Don't have an account?
-              </Button>
-              <Button
-                variant="link"
-                className="p-0 text-start"
-                onClick={() => {
-                  setPhonePurpose('forgot-password');
-                  setShowPhone(true);
-                }}
-              >
-                Forgot Password?
-              </Button>
-              <Button
-                variant="link"
-                className="p-0 text-start"
-                onClick={() => {
-                  setPhonePurpose('forgot-aliasid');
-                  setShowPhone(true);
-                }}
-              >
-                Forgot Alias ID?
-              </Button>
-            </div>
-          </>
-        )}
-      </Form>
-    </Container>
+                    {/* Password */}
+                    {phonePurpose !== 'forgot-password' && (
+                      <Form.Group className="mb-3">
+                        <Form.Label>
+                          Password{' '}
+                          <OverlayTrigger
+                            placement="right"
+                            overlay={<Tooltip>Your secure login password which contain at least 8 characters, 1 letter, and 1 number.</Tooltip>}
+                          >
+                            <InfoCircle style={{ cursor: 'pointer' }} />
+                          </OverlayTrigger>
+                        </Form.Label>
+                        <InputGroup>
+                          <InputGroup.Text><LockFill /></InputGroup.Text>
+                          <Field
+                            name="password"
+                            as={Form.Control}
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Enter password"
+                          />
+                          <Button
+                            variant="outline-secondary"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeSlashFill /> : <EyeFill />}
+                          </Button>
+                        </InputGroup>
+                        <div className="text-danger small mt-1">
+                          <ErrorMessage name="password" />
+                        </div>
+                      </Form.Group>
+                    )}
+                  </>
+                )}
+
+                {/* Phone Input */}
+                {showPhone && (
+                  <>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Phone Number</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><TelephoneFill /></InputGroup.Text>
+                        <Field
+                          name="phone"
+                          as={Form.Control}
+                          placeholder="Enter your phone number"
+                        />
+                      </InputGroup>
+                      <div className="text-danger small mt-1">
+                        <ErrorMessage name="phone" />
+                      </div>
+                    </Form.Group>
+
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="warning"
+                        onClick={() => handlePhoneAction(values)}
+                      >
+                        Submit
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setShowPhone(false);
+                          setPhonePurpose(''); // Reset phone purpose to show all login fields again
+                          resetForm(); // Clear all fields
+                        }}
+                      >
+                        Back
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {!showPhone && (
+                  <>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      className="w-100 mt-3 fw-semibold"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Logging in...' : 'Log In'}
+                    </Button>
+
+                    <div className="text-center mt-3 d-flex flex-column">
+                      <Button
+                        variant="link"
+                        className="text-decoration-none"
+                        onClick={() => navigate('/signup')}
+                      >
+                        Don't have an account?
+                      </Button>
+                      <Button
+                        variant="link"
+                        className="text-decoration-none"
+                        onClick={() => {
+                          setPhonePurpose('forgot-password');
+                          setShowPhone(true);
+                          resetForm(); // Clear all fields
+                        }}
+                      >
+                        Forgot Password?
+                      </Button>
+                      <Button
+                        variant="link"
+                        className="text-decoration-none"
+                        onClick={() => {
+                          setPhonePurpose('forgot-aliasid');
+                          setShowPhone(true);
+                          resetForm(); // Clear all fields
+                        }}
+                      >
+                        Forgot Alias ID?
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </FormikForm>
+            )}
+          </Formik>
+        </Card>
+      </Container>
+
+      <ToastContainer position="top-right" autoClose={3000} />
+    </div>
   );
 };
 
