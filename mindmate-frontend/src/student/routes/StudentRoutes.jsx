@@ -10,6 +10,7 @@ import Appointment from '../pages/Appointment';
 import StudentHome from '../pages/StudentHome';
 import VentWall from '../pages/VentWall';
 import Feedback from '../pages/Feedback';
+import SOS from '../pages/SOS';
 
 const StudentRoutes = () => (
   <BrowserRouter>
@@ -53,6 +54,12 @@ const StudentRoutes = () => (
       <Route path="/feedback" element={
         <ProtectedRoute>
           <Feedback />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/sos" element={
+        <ProtectedRoute>
+          <SOS />
         </ProtectedRoute>
       }
       />

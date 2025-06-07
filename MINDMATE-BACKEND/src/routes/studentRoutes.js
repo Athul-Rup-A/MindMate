@@ -47,6 +47,7 @@ router.delete('/feedbacks/:id', studentAuth, StudentController.deleteFeedback);
 
 // SOS
 router.post('/sos', studentAuth, StudentController.triggerSOS);
+router.get('/resources/counselorPsychologist', studentAuth, StudentController.getAllApprovedCounselorPsychologist);
 router.get('/sos', studentAuth, StudentController.getMySOSLogs);
 router.delete('/sos/:id', studentAuth, StudentController.deleteSOSLog);
 

@@ -681,6 +681,14 @@ const studentController = {
     res.status(201).json(sos);
   }),
 
+  getAllApprovedCounselorPsychologist: asyncHandler(async (req, res) => {
+    const counselorPsychologist = await CounselorPsychologist.find({
+      Status: 'active',
+      ApprovedByAdmin: true,
+    }).select('_id FullName Specialization');
+    res.status(200).json(counselorPsychologist);
+  }),
+
   getMySOSLogs: asyncHandler(async (req, res) => {
     const soslogs = await SOSLog.find({ StudentId: req.user._id }).sort({
       TriggeredAt: -1,
