@@ -8,6 +8,7 @@ import Profile from '../pages/Profile';
 import ForceResetPassword from '../components/ForceResetPassword';
 import Appointment from '../pages/Appointment';
 import StudentHome from '../pages/StudentHome';
+import VentWall from '../pages/VentWall';
 
 const StudentRoutes = () => (
   <BrowserRouter>
@@ -39,6 +40,12 @@ const StudentRoutes = () => (
       <Route path="/home" element={
         <ProtectedRoute>
           <StudentHome />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/ventwall" element={
+        <ProtectedRoute>
+          <VentWall />
         </ProtectedRoute>
       }
       />

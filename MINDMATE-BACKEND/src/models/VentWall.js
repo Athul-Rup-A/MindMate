@@ -11,10 +11,10 @@ const VentWallSchema = new Schema({
     type: String,
     required: true
   },
-  Likes: {
-    type: Number,
-    default: 0
-  },
+  Likes: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Student'
+  }],
   Reports: [{
     type: Schema.Types.ObjectId,
     ref: 'Student'

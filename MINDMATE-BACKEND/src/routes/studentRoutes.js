@@ -33,6 +33,9 @@ router.delete('/appointments/:id', studentAuth, StudentController.cancelAppointm
 // Vents
 router.post('/vents', studentAuth, StudentController.createVent);
 router.get('/vents', studentAuth, StudentController.getMyVents);
+router.get('/vents/all', studentAuth, StudentController.getAllVents); // for community wall
+router.put('/vents/:id/like', studentAuth, StudentController.likeVent);
+router.put('/vents/:id/report', studentAuth, StudentController.reportVent);
 router.put('/vents/:id', studentAuth, StudentController.updateVent);
 router.delete('/vents/:id', studentAuth, StudentController.deleteVent);
 
