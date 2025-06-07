@@ -465,12 +465,8 @@ const studentController = {
     res.status(200).json(vents);
   }),
 
-  // Like a vent
   likeVent: asyncHandler(async (req, res) => {
-    console.log('likeVent API reached!');
-
     const { id } = req.params;
-    console.log('Liking vent id:', id);
 
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ message: 'Invalid Vent ID' });
@@ -480,10 +476,7 @@ const studentController = {
       return res.status(404).json({ message: 'Vent not found' });
 
     const userId = req.user._id.toString();
-    console.log('User ID:', userId);
-    console.log('Vent Likes:', vent.Likes.map(likeId => likeId.toString()));
     const alreadyLiked = vent.Likes.some(id => id.toString() === userId);
-    console.log('Already liked?', alreadyLiked);
     if (alreadyLiked)
       return res.status(400).json({ message: 'Already liked this vent' });
 
@@ -492,10 +485,8 @@ const studentController = {
     res.status(200).json({ Likes: vent.Likes.length });
   }),
 
-  // Report a vent
   reportVent: asyncHandler(async (req, res) => {
     const { id } = req.params;
-    console.log('Reporting vent id:', id);
 
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ message: 'Invalid Vent ID' });
@@ -505,9 +496,7 @@ const studentController = {
       return res.status(404).json({ message: 'Vent not found' });
 
     const userId = req.user._id.toString();
-    console.log('User ID:', userId);
     const alreadyReported = vent.Reports.some(id => id.toString() === userId);
-    console.log('Already reported?', alreadyReported);
     if (alreadyReported)
       return res.status(400).json({ message: 'Already reported this vent' });
 
@@ -584,7 +573,6 @@ const studentController = {
       Rating,
       Comment,
       Type,
-      // CreatedAt: new Date(),
     });
 
     res.status(201).json(feedback);
