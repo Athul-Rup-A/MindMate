@@ -12,6 +12,7 @@ import VentWall from '../pages/VentWall';
 import Feedback from '../pages/Feedback';
 import SOS from '../pages/SOS';
 import Wellness from '../pages/Wellness';
+import Resource from '../pages/Resource';
 
 const StudentRoutes = () => (
   <BrowserRouter>
@@ -67,6 +68,12 @@ const StudentRoutes = () => (
       <Route path="/wellness" element={
         <ProtectedRoute>
           <Wellness />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/resource" element={
+        <ProtectedRoute>
+          <Resource />
         </ProtectedRoute>
       }
       />
