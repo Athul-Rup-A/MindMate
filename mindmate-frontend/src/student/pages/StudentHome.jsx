@@ -19,6 +19,7 @@ const StudentHome = () => {
         <div className="d-flex flex-wrap gap-2">
           <Button variant="primary" onClick={() => navigate('/appointments')}>Manage Appointments</Button>
           <Button variant="primary" onClick={() => navigate('/profile')}>Profile</Button>
+          <Button variant="primary" onClick={() => navigate('/wellness')}>Wellness</Button>
           <Button variant="primary" onClick={() => navigate('/sos')}>SOS</Button>
           <Button variant="primary" onClick={() => navigate('/feedback')}>Feedback</Button>
           <Button variant="primary" onClick={() => navigate('/ventwall')}>VentWall</Button>

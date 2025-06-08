@@ -759,7 +759,10 @@ const studentController = {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    res.status(200).json(student.MoodEntries);
+    // Sort mood entries by date (newest first)
+    const sortedMoods = [...student.MoodEntries].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+    res.status(200).json(sortedMoods);
   }),
 
   updateMoodEntry: asyncHandler(async (req, res) => {
@@ -795,7 +798,7 @@ const studentController = {
 
     if (Date) student.MoodEntries[index].Date = new Date(Date);
     if (Mood) student.MoodEntries[index].Mood = Mood;
-    if (Note) student.MoodEntries[index].Note = Note;
+    if (Note !== undefined) student.MoodEntries[index].Note = Note;
     if (Tags) student.MoodEntries[index].Tags = Tags;
 
     await student.save();
@@ -824,10 +827,7 @@ const studentController = {
 
   // WELLNESS (HABIT)
   addHabitLog: asyncHandler(async (req, res) => {
-    const { Date, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
-    if (!Date || isNaN(Date.parse(Date))) {
-      return res.status(400).json({ message: 'Valid Date is required' });
-    }
+    const { Exercise, Hydration, ScreenTime, SleepHours } = req.body;
 
     if (
       Hydration !== undefined && (typeof Hydration !== 'number' || Hydration < 0 || Hydration > 10000) ||
@@ -839,7 +839,7 @@ const studentController = {
     }
 
     const habitLog = {
-      Date: new Date(Date),
+      Date: Date.now(),
       Exercise: Exercise ?? false,
       Hydration: Hydration ?? 0,
       ScreenTime: ScreenTime ?? 0,
