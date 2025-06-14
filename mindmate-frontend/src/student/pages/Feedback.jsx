@@ -7,6 +7,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
 import { useNavigate } from 'react-router-dom';
+import CustomTable from '../components/CustomTable'
+import GoHomeButton from '../components/GoHomeButton';
 
 const Feedback = () => {
     const [feedbacks, setFeedbacks] = useState([]);
@@ -85,13 +87,7 @@ const Feedback = () => {
                 boxShadow: '0 0 10px rgba(0,0,0,0.1)',
             }}
         >
-            <Button
-                variant="outline-dark"
-                className="position-absolute top-0 end-0 m-3"
-                onClick={() => navigate('/home')}
-            >
-                Home
-            </Button>
+            <GoHomeButton />
 
             <h2 className="mb-4 text-center">Submit Feedback</h2>
             <Formik
@@ -132,37 +128,32 @@ const Feedback = () => {
             </Formik>
 
             <h4 className="text-center">My Feedbacks</h4>
-            {loading ? <Spinner animation="border" /> : (
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>Rating</th>
-                            <th>Type</th>
-                            <th>Comment</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {feedbacks.map((f) => (
-                            <tr key={f._id}>
-                                <td>{f.Rating}</td>
-                                <td>{f.Type}</td>
-                                <td>{f.Comment}</td>
-                                <td>
-                                    <Button
-                                        size="sm"
-                                        variant="info"
-                                        onClick={() => {
-                                            setEditingFeedback(f);
-                                            setShowModal(true);
-                                        }}
-                                    >Edit</Button>{' '}
-                                    <Button size="sm" variant="danger" onClick={() => handleDelete(f._id)}>Delete</Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </Table>
+            {loading ? (
+                <Spinner animation="border" />
+            ) : (
+                <CustomTable
+                    columns={[
+                        { header: 'Rating', accessor: 'Rating' },
+                        { header: 'Type', accessor: 'Type' },
+                        { header: 'Comment', accessor: 'Comment' },
+                    ]}
+                    data={feedbacks}
+                    actions={[
+                        {
+                            label: 'Edit',
+                            variant: 'info',
+                            onClick: (item) => {
+                                setEditingFeedback(item);
+                                setShowModal(true);
+                            },
+                        },
+                        {
+                            label: 'Delete',
+                            variant: 'danger',
+                            onClick: (item) => handleDelete(item._id),
+                        },
+                    ]}
+                />
             )}
 
             <Modal show={showModal} onHide={() => setShowModal(false)}>

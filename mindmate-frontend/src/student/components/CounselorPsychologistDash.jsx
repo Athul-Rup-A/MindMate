@@ -4,6 +4,7 @@ import { Card, Button, Container, Row, Col } from 'react-bootstrap';
 import { StarFill, CalendarCheckFill } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
+import authHeader from '../../config/authHeader';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CounselorPsychologistDash = () => {
@@ -23,11 +24,7 @@ const CounselorPsychologistDash = () => {
                     return;
                 }
 
-                const res = await axios.get(`${BASE_URL}/counselorPsychologist`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
+                const res = await axios.get(`${BASE_URL}/counselorPsychologist`, authHeader());
                 setCounselorPsychologists(res.data);
             } catch (err) {
                 toast.error('Failed to fetch counselor/psychologists');
@@ -37,13 +34,18 @@ const CounselorPsychologistDash = () => {
         fetchCounselorPsychologists();
     }, []);
 
-    const formatSlots = (slots = []) => {
-        return slots.map((slot, i) => `${slot.StartTime} to ${slot.EndTime}`).join(', ');
+    const formatSlotsSeparated = (slots = []) => {
+        return slots.map(({ Day, StartTime, EndTime }, index) => (
+            <div key={index} className="mb-1">
+                <strong>Day:</strong> {Day}<br />
+                <strong>Available Time:</strong> {StartTime} to {EndTime}
+            </div>
+        ));
     };
 
     return (
         <Container className="py-5">
-            <h2 className="mb-4 text-center">Available Counselors & Psychologists</h2>
+            <h3 className="mb-4 text-center">Available Counselors & Psychologists</h3>
             <Row className="g-4">
                 {counselorPsychologists.length > 0 ? (
                     counselorPsychologists.map((counselorPsychologist) => (
@@ -55,7 +57,7 @@ const CounselorPsychologistDash = () => {
                             <Card
                                 className="shadow-sm rounded-4 p-3 d-flex flex-column"
                                 style={{
-                                    width: '320px',
+                                    width: '350px',
                                     minHeight: '430px',
                                 }}
                             >
@@ -66,12 +68,11 @@ const CounselorPsychologistDash = () => {
                                 />
                                 <Card.Body className="d-flex flex-column flex-grow-1">
                                     <Card.Title className="fw-bold">{counselorPsychologist.FullName}</Card.Title>
-                                    <Card.Subtitle className="mb-2 text-muted">Alias ID: {counselorPsychologist.AliasId}</Card.Subtitle>
+                                    <Card.Subtitle className="mb-2 mt-0 text-muted">Specialization: {counselorPsychologist.Specialization}</Card.Subtitle>
 
                                     <p className="mb-1"><strong>Role:</strong> {counselorPsychologist.Role}</p>
-                                    <p className="mb-1"><strong>Specialization:</strong> {counselorPsychologist.Specialization}</p>
                                     <p className="mb-1"><strong>Credentials:</strong> {counselorPsychologist.Credentials || 'N/A'}</p>
-                                    <p className="mb-1"><strong>Available Time:</strong> {formatSlots(counselorPsychologist.AvailabilitySlots)}</p>
+                                    <div className="mb-1">{formatSlotsSeparated(counselorPsychologist.AvailabilitySlots)}</div>
 
                                     <div className="d-flex align-items-center mt-auto">
                                         <StarFill className="text-warning me-1" />

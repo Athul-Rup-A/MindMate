@@ -476,13 +476,18 @@ const studentController = {
       return res.status(404).json({ message: 'Vent not found' });
 
     const userId = req.user._id.toString();
-    const alreadyLiked = vent.Likes.some(id => id.toString() === userId);
-    if (alreadyLiked)
-      return res.status(400).json({ message: 'Already liked this vent' });
+    const index = vent.Likes.findIndex(uid => uid.toString() === userId);
 
-    vent.Likes.push(userId);
+    if (index === -1) {
+      // Not yet liked → Like it
+      vent.Likes.push(userId);
+    } else {
+      // Already liked → Unlike it
+      vent.Likes.splice(index, 1);
+    }
+
     await vent.save();
-    res.status(200).json({ Likes: vent.Likes.length });
+    res.status(200).json({ Likes: vent.Likes });
   }),
 
   reportVent: asyncHandler(async (req, res) => {
@@ -496,13 +501,18 @@ const studentController = {
       return res.status(404).json({ message: 'Vent not found' });
 
     const userId = req.user._id.toString();
-    const alreadyReported = vent.Reports.some(id => id.toString() === userId);
-    if (alreadyReported)
-      return res.status(400).json({ message: 'Already reported this vent' });
+    const index = vent.Reports.findIndex(uid => uid.toString() === userId);
 
-    vent.Reports.push(userId);
+    if (index === -1) {
+      // Not yet reported → Report it
+      vent.Reports.push(userId);
+    } else {
+      // Already reported → Unreport it
+      vent.Reports.splice(index, 1);
+    }
+
     await vent.save();
-    res.status(200).json({ message: 'Reported successfully', Reports: vent.Reports.length });
+    res.status(200).json({ Reports: vent.Reports });
   }),
 
   updateVent: asyncHandler(async (req, res) => {
@@ -961,7 +971,7 @@ const studentController = {
 
   // REPORTS
   createReport: asyncHandler(async (req, res) => {
-    const { TargetId, Reason } = req.body;
+    const { TargetId, TargetAliasId, TargetType, Reason } = req.body;
 
     if (!TargetId || !Reason) {
       return res.status(400).json({ message: 'TargetId and Reason are required' });
@@ -976,9 +986,16 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid Reason value' });
     }
 
+    const validTypes = ['CounselorPsychologist', 'Resource', 'Vent'];
+    if (!validTypes.includes(TargetType)) {
+      return res.status(400).json({ message: 'Invalid TargetType' });
+    }
+
     const report = await Report.create({
       ReporterId: req.user._id,
       TargetId,
+      TargetAliasId: TargetType === 'CounselorPsychologist' ? TargetAliasId : undefined,
+      TargetType,
       Reason,
     });
 
@@ -986,14 +1003,62 @@ const studentController = {
   }),
 
   getMyReports: asyncHandler(async (req, res) => {
-    const reports = await Report.find({ ReporterId: req.user._id })
-      .sort({ createdAt: -1 }); // Show newest first
+    try {
+      const reports = await Report.find({ ReporterId: req.user._id })
+        .lean()
+        .sort({ createdAt: -1 });
 
-    if (!reports) {
-      return res.status(404).json({ message: 'Report not found' });
+      const enhancedReports = await Promise.all(
+        reports.map(async (report) => {
+          let targetName = 'N/A';
+
+          if (report.TargetType === 'CounselorPsychologist') {
+            try {
+              const counselor = await CounselorPsychologist.findOne({ AliasId: report.TargetAliasId }).lean();
+
+              if (!counselor) {
+                targetName = 'N/A';
+              } else {
+                targetName = counselor.FullName;
+              }
+            } catch (error) {
+              res.status(500).json({ message: 'Error finding counselor:', err });
+            }
+          }
+
+          else if (report.TargetType === 'Resource') {
+            try {
+              if (mongoose.Types.ObjectId.isValid(report.TargetId)) {
+                const resource = await Resource.findById(String(report.TargetId)).lean();
+                if (resource) targetName = resource.title || 'N/A';
+              }
+            } catch (err) {
+              res.status(500).json({ message: 'Error fetching resource:', err });
+            }
+          }
+
+          else if (report.TargetType === 'Vent') {
+            try {
+              if (mongoose.Types.ObjectId.isValid(report.TargetId)) {
+                const vent = await Vent.findById(String(report.TargetId)).lean();
+                if (vent) targetName = vent.Topic || 'Untitled Vent';
+              }
+            } catch (err) {
+              res.status(500).json({ message: 'Error fetching vent:', err });
+            }
+          }
+
+          return {
+            ...report,
+            TargetName: targetName,
+          };
+        })
+      );
+
+      res.json(enhancedReports);
+    } catch (err) {
+      res.status(500).json({ message: 'Error in getMyReports:', err });
     }
-
-    res.status(200).json(reports);
   }),
 
   deleteReport: asyncHandler(async (req, res) => {

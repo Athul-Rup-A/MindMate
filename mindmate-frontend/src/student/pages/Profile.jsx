@@ -8,6 +8,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import GoHomeButton from '../components/GoHomeButton';
 
 const Profile = () => {
   const [profile, setProfile] = useState({ AliasId: '', Phone: '' });
@@ -60,11 +61,7 @@ const Profile = () => {
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Top Right Home Button */}
-      <div className="d-flex justify-content-end mb-4">
-        <Button variant="outline-dark" onClick={goHome}>
-          Home
-        </Button>
-      </div>
+      <GoHomeButton />
 
       <Row className="g-4">
         {/* Profile Edit */}

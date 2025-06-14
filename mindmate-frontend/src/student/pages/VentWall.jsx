@@ -8,6 +8,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import getCurrentUserId from '../../config/getCurrentUserId';
+import GoHomeButton from '../components/GoHomeButton';
 
 const VentWall = () => {
   const [vents, setVents] = useState([]);
@@ -37,7 +38,7 @@ const VentWall = () => {
     try {
       const res = await axios.put(`${BASE_URL}/vents/${ventId}/like`, {}, authHeader());
       setVents(vents.map(v =>
-        v._id === ventId ? { ...v, Likes: new Array(res.data.Likes).fill(null) } : v
+        v._id === ventId ? { ...v, Likes: res.data.Likes } : v
       ));
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to like the post.');
@@ -47,9 +48,8 @@ const VentWall = () => {
   const handleReport = async (ventId) => {
     try {
       const res = await axios.put(`${BASE_URL}/vents/${ventId}/report`, {}, authHeader());
-      toast.success('Reported anonymously');
       setVents(vents.map(v =>
-        v._id === ventId ? { ...v, Reports: new Array(res.data.Reports).fill(null) } : v
+        v._id === ventId ? { ...v, Reports: res.data.Reports } : v
       ));
     } catch (error) {
       toast.error(error.response?.data?.message || 'Already reported or failed to report.');
@@ -90,11 +90,7 @@ const VentWall = () => {
     }}>
       <Container className="bg-white p-4 rounded shadow">
 
-        <div className="d-flex justify-content-end mb-3">
-          <Button variant="outline-dark" onClick={() => navigate('/home')}>
-            Home
-          </Button>
-        </div>
+        <GoHomeButton />
 
         <h2 className="text-center mb-4">Anonymous Community Vent Wall</h2>
 
@@ -148,14 +144,20 @@ const VentWall = () => {
                   </div>
 
                   <div className="d-flex gap-2 align-items-center">
-                    <Button size="sm" variant="outline-dark" onClick={() => handleLike(vent._id)}>
-                      ❤️ {vent.Likes?.length || 0}
+                    <Button
+                      size="sm"
+                      variant='outline-dark'
+                      onClick={() => handleLike(vent._id)}
+                    >
+                      {vent.Likes?.some(id => id === currentUserId) ? '❤️' : '🤍'} {vent.Likes?.length || 0}
                     </Button>
-                    
-                    <Button size="sm" variant="outline-dark" onClick={() => handleReport(vent._id)}>
-                      🚩 {vent.Reports?.length || 0}
+                    <Button
+                      size="sm"
+                      variant='outline-dark'
+                      onClick={() => handleReport(vent._id)}
+                    >
+                      {vent.Reports?.some(id => id === currentUserId) ? '🚩' : '🏳️'} {vent.Reports?.length || 0}
                     </Button>
-
                     {(vent.StudentId?._id || vent.StudentId)?.toString() === currentUserId && (
                       <Button
                         size="sm"

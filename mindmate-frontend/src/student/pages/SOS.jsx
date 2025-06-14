@@ -7,6 +7,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
 import { useNavigate } from 'react-router-dom';
+import CustomTable from '../components/CustomTable';
+import GoHomeButton from '../components/GoHomeButton';
 
 const SOS = () => {
     const [sosLogs, setSosLogs] = useState([]);
@@ -114,11 +116,7 @@ const SOS = () => {
         >
             <ToastContainer position="top-right" autoClose={3000} />
 
-            <div className="d-flex justify-content-end mb-3">
-                <Button variant="outline-dark" onClick={() => navigate('/home')}>
-                    Home
-                </Button>
-            </div>
+            <GoHomeButton />
 
             <h2 className="text-center mb-4">Trigger SOS</h2>
 
@@ -198,40 +196,32 @@ const SOS = () => {
             ) : sosLogs.length === 0 ? (
                 <p className="text-center">No SOS logs found</p>
             ) : (
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Method</th>
-                            <th>Triggered At</th>
-                            <th>Alerted To</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sosLogs.map((log, idx) => (
-                            <tr key={log._id}>
-                                <td>{idx + 1}</td>
-                                <td>{log.Method}</td>
-                                <td>{new Date(log.TriggeredAt).toLocaleString()}</td>
-                                <td>
-                                    {log.AlertedTo.length > 0
-                                        ? log.AlertedTo.map((id) => <div key={id}>{id}</div>)
-                                        : 'None'}
-                                </td>
-                                <td>
-                                    <Button
-                                        size="sm"
-                                        variant="danger"
-                                        onClick={() => handleDelete(log._id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </Table>
+                <CustomTable
+                    columns={[
+                        { header: '#', accessor: (_, idx) => idx + 1 },
+                        { header: 'Method', accessor: 'Method' },
+                        {
+                            header: 'Triggered At',
+                            accessor: (log) => new Date(log.TriggeredAt).toLocaleString(),
+                        },
+                        {
+                            header: 'Alerted To',
+                            accessor: (log) =>
+                                log.AlertedTo.length > 0
+                                    ? log.AlertedTo.map((id) => <div key={id}>{id}</div>)
+                                    : 'None',
+                        },
+                    ]}
+                    data={sosLogs}
+                    actions={[
+                        {
+                            label: 'Delete',
+                            variant: 'danger',
+                            onClick: (log) => handleDelete(log._id),
+                        },
+                    ]}
+                    rowKey={(log) => `sos-${log._id}`}
+                />
             )}
         </Container>
     );

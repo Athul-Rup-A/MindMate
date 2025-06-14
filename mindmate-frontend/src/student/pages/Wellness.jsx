@@ -8,6 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import authHeader from '../../config/authHeader';
 import Select from 'react-select';
+import CustomTable from '../components/CustomTable';
+import GoHomeButton from '../components/GoHomeButton';
 
 const Wellness = () => {
     const [moodEntries, setMoodEntries] = useState([]);
@@ -182,7 +184,9 @@ const Wellness = () => {
             <ToastContainer position="top-right" autoClose={3000} />
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>Wellness Tracker</h2>
-                <Button variant="outline-dark" onClick={() => navigate('/home')}>Home</Button>
+
+                <GoHomeButton />
+
             </div>
 
             {/* Mood Form */}
@@ -284,133 +288,117 @@ const Wellness = () => {
             {loading ? (
                 <Spinner animation="border" />
             ) : (
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Date</th>
-                            <th>Mood</th>
-                            <th>Tags</th>
-                            <th>Note</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {moodEntries.map((entry, idx) => (
-                            <React.Fragment key={`mood-${idx}`}>
-                                <tr>
-                                    <td>{idx + 1}</td>
-                                    <td>{new Date(entry.Date).toLocaleDateString()}</td>
-                                    <td>{entry.Mood}</td>
-                                    <td>{entry.Tags?.join(', ')}</td>
-                                    <td>{entry.Note}</td>
-                                    <td>
-                                        <Button
-                                            size="sm"
-                                            variant="warning"
-                                            className="me-2"
-                                            onClick={() => {
-                                                const moodData = moodEntries[idx];
-                                                setEditMoodIndex(idx);
-                                                setEditMoodValues({
-                                                    Mood: moodData.Mood || '',
-                                                    Note: moodData.Note || '',
-                                                    Tags: Array.isArray(moodData.Tags) ? moodData.Tags : []
-                                                });
-                                            }}
-                                        >
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => handleDeleteMood(idx)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </td>
-                                </tr>
-
-                                {editMoodIndex === idx && (
-                                    <tr>
-                                        <td colSpan="6">
-                                            <Formik
-                                                enableReinitialize
-                                                initialValues={editMoodValues}
-                                                validationSchema={moodSchema}
-                                                onSubmit={(values, { resetForm }) => {
-                                                    handleUpdateMood(values, idx);
-                                                    resetForm();
-                                                }}
-                                            >
-                                                {({ isSubmitting, dirty, isValid }) => (
-                                                    <FormikForm>
-                                                        <Row className="p-2">
-                                                            <Col md={3}>
-                                                                <Form.Label>Mood</Form.Label>
-                                                                <Field as="select" name="Mood" className="form-control">
-                                                                    <option value="">Select Mood</option>
-                                                                    {validMoods.map((m) => (
-                                                                        <option key={m} value={m}>{m}</option>
-                                                                    ))}
-                                                                </Field>
-                                                                <ErrorMessage name="Mood" component="div" className="text-danger" />
-                                                            </Col>
-                                                            <Col md={3}>
-                                                                <Form.Label>Tags</Form.Label>
-                                                                <Field name="Tags">
-                                                                    {({ field, form }) => (
-                                                                        <Select
-                                                                            isMulti
-                                                                            name="Tags"
-                                                                            options={validTags.map(tag => ({ label: tag, value: tag }))}
-                                                                            className="basic-multi-select"
-                                                                            classNamePrefix="select"
-                                                                            value={(field.value || []).map(tag => ({ label: tag, value: tag }))}
-                                                                            onChange={(selectedOptions) => {
-                                                                                const tags = selectedOptions.map(option => option.value);
-                                                                                form.setFieldValue('Tags', tags);
-                                                                            }}
-                                                                            onBlur={() => form.setFieldTouched('Tags', true)}
-                                                                        />
-                                                                    )}
-                                                                </Field>
-                                                                <ErrorMessage name="Tags" component="div" className="text-danger" />
-                                                            </Col>
-                                                            <Col md={3}>
-                                                                <Form.Label>Note</Form.Label>
-                                                                <Field name="Note" as="textarea" className="form-control" />
-                                                            </Col>
-                                                            <Col md={3} className="d-flex align-items-end">
-                                                                <Button
-                                                                    type="submit"
-                                                                    variant="success"
-                                                                    disabled={!dirty || !isValid || isSubmitting}
-                                                                >
-                                                                    Update
-                                                                </Button>
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    className="ms-2"
-                                                                    onClick={() => {
-                                                                        setEditMoodIndex(null);
-                                                                        setEditMoodValues(null);
+                <CustomTable
+                    columns={[
+                        { header: '#', accessor: (_, idx) => idx + 1 },
+                        { header: 'Date', accessor: (entry) => new Date(entry.Date).toLocaleDateString() },
+                        { header: 'Mood', accessor: 'Mood' },
+                        { header: 'Tags', accessor: (entry) => entry.Tags?.join(', ') },
+                        { header: 'Note', accessor: 'Note' }
+                    ]}
+                    data={moodEntries}
+                    actions={[
+                        {
+                            label: 'Edit',
+                            variant: 'warning',
+                            onClick: (entry, idx) => {
+                                setEditMoodIndex(idx);
+                                setEditMoodValues({
+                                    Mood: entry.Mood || '',
+                                    Note: entry.Note || '',
+                                    Tags: Array.isArray(entry.Tags) ? entry.Tags : [],
+                                });
+                            }
+                        },
+                        {
+                            label: 'Delete',
+                            variant: 'danger',
+                            onClick: (_, idx) => handleDeleteMood(idx)
+                        }
+                    ]}
+                    renderExpandedRow={(entry, idx) => {
+                        if (editMoodIndex !== idx) return null;
+                        return (
+                            <tr>
+                                <td colSpan="6">
+                                    <Formik
+                                        enableReinitialize
+                                        initialValues={editMoodValues}
+                                        validationSchema={moodSchema}
+                                        onSubmit={(values, { resetForm }) => {
+                                            handleUpdateMood(values, idx);
+                                            setEditMoodIndex(null);
+                                            setEditMoodValues(null);
+                                            resetForm();
+                                        }}
+                                    >
+                                        {({ isSubmitting, dirty, isValid }) => (
+                                            <FormikForm>
+                                                <Row className="p-2">
+                                                    <Col md={3}>
+                                                        <Form.Label>Mood</Form.Label>
+                                                        <Field as="select" name="Mood" className="form-control">
+                                                            <option value="">Select Mood</option>
+                                                            {validMoods.map((m) => (
+                                                                <option key={m} value={m}>{m}</option>
+                                                            ))}
+                                                        </Field>
+                                                        <ErrorMessage name="Mood" component="div" className="text-danger" />
+                                                    </Col>
+                                                    <Col md={3}>
+                                                        <Form.Label>Tags</Form.Label>
+                                                        <Field name="Tags">
+                                                            {({ field, form }) => (
+                                                                <Select
+                                                                    isMulti
+                                                                    name="Tags"
+                                                                    options={validTags.map(tag => ({ label: tag, value: tag }))}
+                                                                    className="basic-multi-select"
+                                                                    classNamePrefix="select"
+                                                                    value={(field.value || []).map(tag => ({ label: tag, value: tag }))}
+                                                                    onChange={(selectedOptions) => {
+                                                                        const tags = selectedOptions.map(option => option.value);
+                                                                        form.setFieldValue('Tags', tags);
                                                                     }}
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                            </Col>
-                                                        </Row>
-                                                    </FormikForm>
-                                                )}
-                                            </Formik>
-                                        </td>
-                                    </tr>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </tbody>
-                </Table>
+                                                                    onBlur={() => form.setFieldTouched('Tags', true)}
+                                                                />
+                                                            )}
+                                                        </Field>
+                                                        <ErrorMessage name="Tags" component="div" className="text-danger" />
+                                                    </Col>
+                                                    <Col md={3}>
+                                                        <Form.Label>Note</Form.Label>
+                                                        <Field name="Note" as="textarea" className="form-control" />
+                                                    </Col>
+                                                    <Col md={3} className="d-flex align-items-end">
+                                                        <Button
+                                                            type="submit"
+                                                            variant="success"
+                                                            disabled={!dirty || !isValid || isSubmitting}
+                                                        >
+                                                            Update
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            className="ms-2"
+                                                            onClick={() => {
+                                                                setEditMoodIndex(null);
+                                                                setEditMoodValues(null);
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </Col>
+                                                </Row>
+                                            </FormikForm>
+                                        )}
+                                    </Formik>
+                                </td>
+                            </tr>
+                        );
+                    }}
+                    rowKey={(_, idx) => `mood-${idx}`}
+                />
             )}
 
             {/* Habit Logs Table */}
@@ -418,121 +406,103 @@ const Wellness = () => {
             {loading ? (
                 <Spinner animation="border" />
             ) : (
-                <Table striped bordered hover>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Date</th>
-                            <th>Exercise</th>
-                            <th>Hydration</th>
-                            <th>Screen Time</th>
-                            <th>Sleep Hours</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {habitLogs.map((log, idx) => (
-                            <React.Fragment key={`habit-row-${idx}`}>
-                                <tr key={idx}>
-                                    <td>{idx + 1}</td>
-                                    <td>{new Date(log.Date).toLocaleDateString()}</td>
-                                    <td>{log.Exercise ? 'Yes' : 'No'}</td>
-                                    <td>{log.Hydration} ml</td>
-                                    <td>{log.ScreenTime} hrs</td>
-                                    <td>{log.SleepHours} hrs</td>
-                                    <td>
-                                        <Button
-                                            size="sm"
-                                            variant="warning"
-                                            className="me-2"
-                                            onClick={() => {
-                                                setEditIndex(idx);
-                                                setEditValues({
-                                                    Exercise: log.Exercise,
-                                                    Hydration: log.Hydration,
-                                                    ScreenTime: log.ScreenTime,
-                                                    SleepHours: log.SleepHours,
-                                                });
-                                            }}
-                                        >
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => handleDeleteHabit(idx)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </td>
-                                </tr>
-
-                                {editIndex === idx && (
-                                    <tr>
-                                        <td colSpan="7">
-                                            <Formik
-                                                enableReinitialize
-                                                initialValues={editValues}
-                                                validationSchema={habitSchema}
-                                                onSubmit={(values, { resetForm }) => {
-                                                    handleUpdateHabit(values, editIndex);
-                                                    setEditIndex(null);
-                                                    setEditValues(null);
-                                                    resetForm();
-                                                }}
-                                            >
-                                                {({ isSubmitting, dirty, isValid }) => (
-                                                    <FormikForm>
-                                                        <Row className="p-2">
-                                                            <Col md={2}>
-                                                                <Form.Label>Exercise</Form.Label>
-                                                                <Field type="checkbox" name="Exercise" className="form-check-input ms-2" />
-                                                            </Col>
-                                                            <Col md={2}>
-                                                                <Form.Label>Hydration</Form.Label>
-                                                                <Field type="number" name="Hydration" className="form-control" />
-                                                                <ErrorMessage name="Hydration" component="div" className="text-danger" />
-                                                            </Col>
-                                                            <Col md={2}>
-                                                                <Form.Label>Screen Time</Form.Label>
-                                                                <Field type="number" name="ScreenTime" className="form-control" />
-                                                                <ErrorMessage name="ScreenTime" component="div" className="text-danger" />
-                                                            </Col>
-                                                            <Col md={2}>
-                                                                <Form.Label>Sleep Hours</Form.Label>
-                                                                <Field type="number" name="SleepHours" className="form-control" />
-                                                                <ErrorMessage name="SleepHours" component="div" className="text-danger" />
-                                                            </Col>
-                                                            <Col md={4} className="d-flex align-items-end">
-                                                                <Button
-                                                                    type="submit"
-                                                                    variant="success"
-                                                                    disabled={!dirty || !isValid || isSubmitting}
-                                                                >
-                                                                    Update
-                                                                </Button>
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    className="ms-2"
-                                                                    onClick={() => {
-                                                                        setEditIndex(null);
-                                                                        setEditValues(null);
-                                                                    }}
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                            </Col>
-                                                        </Row>
-                                                    </FormikForm>
-                                                )}
-                                            </Formik>
-                                        </td>
-                                    </tr>
-                                )}
-                            </React.Fragment >
-                        ))}
-                    </tbody>
-                </Table>
+                <CustomTable
+                    columns={[
+                        { header: '#', accessor: (_, idx) => idx + 1 },
+                        { header: 'Date', accessor: (entry) => new Date(entry.Date).toLocaleDateString() },
+                        { header: 'Exercise', accessor: (entry) => (entry.Exercise ? 'Yes' : 'No') },
+                        { header: 'Hydration', accessor: (entry) => `${entry.Hydration} ml` },
+                        { header: 'Screen Time', accessor: (entry) => `${entry.ScreenTime} hrs` },
+                        { header: 'Sleep Hours', accessor: (entry) => `${entry.SleepHours} hrs` },
+                    ]}
+                    data={habitLogs}
+                    actions={[
+                        {
+                            label: 'Edit',
+                            variant: 'warning',
+                            onClick: (entry, idx) => {
+                                setEditIndex(idx);
+                                setEditValues({
+                                    Exercise: entry.Exercise,
+                                    Hydration: entry.Hydration,
+                                    ScreenTime: entry.ScreenTime,
+                                    SleepHours: entry.SleepHours,
+                                });
+                            }
+                        },
+                        {
+                            label: 'Delete',
+                            variant: 'danger',
+                            onClick: (_, idx) => handleDeleteHabit(idx)
+                        }
+                    ]}
+                    renderExpandedRow={(entry, idx) => {
+                        if (editIndex !== idx) return null;
+                        return (
+                            <tr>
+                                <td colSpan="7">
+                                    <Formik
+                                        enableReinitialize
+                                        initialValues={editValues}
+                                        validationSchema={habitSchema}
+                                        onSubmit={(values, { resetForm }) => {
+                                            handleUpdateHabit(values, editIndex);
+                                            setEditIndex(null);
+                                            setEditValues(null);
+                                            resetForm();
+                                        }}
+                                    >
+                                        {({ isSubmitting, dirty, isValid }) => (
+                                            <FormikForm>
+                                                <Row className="p-2">
+                                                    <Col xs={12} sm={6} md={2} className="mb-3">
+                                                        <Form.Label>Exercise</Form.Label><br />
+                                                        <Field type="checkbox" name="Exercise" className="form-check-input ms-2" />
+                                                    </Col>
+                                                    <Col xs={12} sm={6} md={2} className="mb-3">
+                                                        <Form.Label>Hydration</Form.Label>
+                                                        <Field type="number" name="Hydration" className="form-control" />
+                                                        <ErrorMessage name="Hydration" component="div" className="text-danger" />
+                                                    </Col>
+                                                    <Col xs={12} sm={6} md={2} className="mb-3">
+                                                        <Form.Label>Screen Time</Form.Label>
+                                                        <Field type="number" name="ScreenTime" className="form-control" />
+                                                        <ErrorMessage name="ScreenTime" component="div" className="text-danger" />
+                                                    </Col>
+                                                    <Col xs={12} sm={6} md={2} className="mb-3">
+                                                        <Form.Label>Sleep Hours</Form.Label>
+                                                        <Field type="number" name="SleepHours" className="form-control" />
+                                                        <ErrorMessage name="SleepHours" component="div" className="text-danger" />
+                                                    </Col>
+                                                    <Col xs={12} md={4} className="d-flex align-items-end mb-3">
+                                                        <Button
+                                                            type="submit"
+                                                            variant="success"
+                                                            disabled={!dirty || !isValid || isSubmitting}
+                                                        >
+                                                            Update
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            className="ms-2"
+                                                            onClick={() => {
+                                                                setEditIndex(null);
+                                                                setEditValues(null);
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </Col>
+                                                </Row>
+                                            </FormikForm>
+                                        )}
+                                    </Formik>
+                                </td>
+                            </tr>
+                        );
+                    }}
+                    rowKey={(_, idx) => `habit-${idx}`}
+                />
             )}
         </Container>
     );

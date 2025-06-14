@@ -9,6 +9,8 @@ import * as Yup from 'yup';
 
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import CustomTable from '../components/CustomTable';
+import GoHomeButton from '../components/GoHomeButton';
 
 const Appointment = () => {
   const { id: counselorPsychologistIdFromURL } = useParams();
@@ -147,6 +149,38 @@ const Appointment = () => {
     }
   };
 
+  const columns = [
+    {
+      header: 'Counselor/Psychologist',
+      accessor: 'CounselorPsychologistId',
+    },
+    {
+      header: 'Date',
+      accessor: (item) => new Date(item.SlotDate).toLocaleDateString(),
+    },
+    {
+      header: 'Start Time',
+      accessor: 'SlotStartTime',
+    },
+    {
+      header: 'End Time',
+      accessor: 'SlotEndTime',
+    },
+    {
+      header: 'Status',
+      accessor: (item) => item.Status.charAt(0).toUpperCase() + item.Status.slice(1),
+    },
+  ];
+
+  const actions = [
+    {
+      label: 'Cancel',
+      variant: 'danger',
+      onClick: (item) => handleCancel(item._id),
+      show: (item) => item.Status === 'pending', // Only show cancel if status is pending
+    },
+  ];
+
   return (
     <div
       style={{
@@ -173,9 +207,8 @@ const Appointment = () => {
             <option value="completed">Completed</option>
           </Form.Select>
 
-          <Button variant="outline-dark" onClick={() => navigate('/home')}>
-            Home
-          </Button>
+          <GoHomeButton />
+
         </div>
 
         <div className="p-4 bg-light rounded shadow-sm mb-4">
@@ -185,53 +218,12 @@ const Appointment = () => {
             <Spinner animation="border" />
           ) : (
             <>
-              <Table bordered hover responsive="lg" className="mb-3">
-                <thead>
-                  <tr>
-                    <th>Counselor/Psychologist</th>
-                    <th>Date</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAppointments.length === 0 && (
-                    <tr>
-                      <td colSpan="6" className="text-center">
-                        No appointments found.
-                      </td>
-                    </tr>
-                  )}
-                  {filteredAppointments.map((app) => (
-                    <tr key={app._id}>
-                      <td>{app.CounselorPsychologistId}</td>
-                      <td>{new Date(app.SlotDate).toLocaleDateString()}</td>
-                      <td>{app.SlotStartTime}</td>
-                      <td>{app.SlotEndTime}</td>
-                      <td className={`text-capitalize`}>{app.Status}</td>
-                      <td>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleCancel(app._id)}
-                          disabled={app.Status !== 'pending'}
-                        >
-                          Cancel
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-
-              <div className="d-flex justify-content-end">
-                <Button onClick={() => {
-                  setFromCounselorPsychologistCard(false);  // manually unset to view a fresh Counselor/Psychologist Id
-                  setShowModal(true)
-                }}>Book Appointment</Button>
-              </div>
+              <CustomTable
+                columns={columns}
+                data={filteredAppointments}
+                actions={actions}
+                rowKey={(item) => item._id}
+              />
             </>
           )}
         </div>

@@ -1,23 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Modal, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Field } from 'formik';
 import * as Yup from 'yup';
 import authHeader from '../../config/authHeader';
-import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import GoHomeButton from '../components/GoHomeButton';
 
 const BASE_URL = 'http://localhost:5000/api/students';
 
 const ResourceSchema = Yup.object().shape({
     language: Yup.string().optional(),
-    type: Yup.string().optional(),
 });
 
 const Resource = () => {
     const [resources, setResources] = useState([]);
     const [allResources, setAllResources] = useState([]);
+    const [filteredResources, setFilteredResources] = useState([]);
+    const [selectedType, setSelectedType] = useState('');
     const [selected, setSelected] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
@@ -26,7 +27,8 @@ const Resource = () => {
         try {
             const res = await axios.get(`${BASE_URL}/resources`, authHeader());
             setResources(res.data);
-            setAllResources(res.data); // store the full unfiltered list
+            setAllResources(res.data);
+            setFilteredResources(res.data);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to load resources');
         }
@@ -42,6 +44,22 @@ const Resource = () => {
         }
     };
 
+    const filterResources = (type, language) => {
+        const filtered = allResources.filter((r) => {
+            return (
+                (!type || r.type === type) &&
+                (!language || r.language === language)
+            );
+        });
+        setFilteredResources(filtered);
+    };
+
+    const handleTypeChange = (e, setFieldValue, language) => {
+        const selected = e.target.value;
+        setSelectedType(selected);
+        filterResources(selected, language);
+    };
+
     useEffect(() => {
         fetchResources();
     }, []);
@@ -55,27 +73,29 @@ const Resource = () => {
             }}
         >
             <Container>
-                <div className="d-flex justify-content-end mb-3">
-                    <Button variant="outline-light" onClick={() => navigate('/home')}>Home</Button>
-                </div>
+
+                <GoHomeButton variant='outline-light' />
+
                 <h2 className="text-center text-white mb-4">Mental Health Resources</h2>
 
                 <Formik
-                    initialValues={{ language: '', type: '' }}
+                    initialValues={{ language: '' }}
                     validationSchema={ResourceSchema}
-                    onSubmit={(values) => {
-                        const filtered = allResources.filter((r) => {
-                            return (
-                                (!values.language || r.language === values.language) &&
-                                (!values.type || r.type === values.type)
-                            );
-                        });
-                        setResources(filtered);
-                    }}
+                    onSubmit={() => { }}
                 >
-                    {() => (
-                        <Form className="mb-4 d-flex justify-content-center gap-3">
-                            <Field as="select" name="language" className="form-control w-25">
+                    {({ values, setFieldValue }) => (
+                        <div className="mb-4 d-flex justify-content-center gap-3 flex-wrap">
+
+                            {/* Language Dropdown */}
+                            <Field
+                                as="select"
+                                name="language"
+                                className="form-control w-25"
+                                onChange={(e) => {
+                                    setFieldValue('language', e.target.value);
+                                    filterResources(selectedType, e.target.value);
+                                }}
+                            >
                                 <option value="">All Languages</option>
                                 <option value="English">English</option>
                                 <option value="Hindi">Hindi</option>
@@ -83,36 +103,45 @@ const Resource = () => {
                                 <option value="Malayalam">Malayalam</option>
                             </Field>
 
-                            <Field as="select" name="type" className="form-control w-25">
+                            {/* Type Dropdown */}
+                            <Form.Select
+                                value={selectedType}
+                                className="form-control w-25"
+                                onChange={(e) => handleTypeChange(e, setFieldValue, values.language)}
+                            >
                                 <option value="">All Types</option>
                                 <option value="video">Video</option>
                                 <option value="article">Article</option>
                                 <option value="podcast">Podcast</option>
                                 <option value="guide">Guide</option>
-                            </Field>
-
-                            <Button type="submit" variant="light">Filter</Button>
-                        </Form>
+                            </Form.Select>
+                        </div>
                     )}
                 </Formik>
 
                 <Row>
-                    {resources.map((res, idx) => (
-                        <Col md={4} key={idx} className="mb-4">
-                            <Card className="shadow-sm h-100">
-                                <Card.Body>
-                                    <Card.Title>{res.title}</Card.Title>
-                                    <Card.Subtitle className="mb-2 text-muted">{res.type} ({res.language})</Card.Subtitle>
-                                    <Card.Text>
-                                        Tags: {res.tags?.join(', ') || 'None'}
-                                    </Card.Text>
-                                    <Button variant="primary" onClick={() => fetchSingleResource(res._id)}>
-                                        View Resource
-                                    </Button>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
+                    {filteredResources.length === 0 ? (
+                        <p className="text-center text-white">No resources found for selected filters.</p>
+                    ) : (
+                        filteredResources.map((res, idx) => (
+                            <Col md={4} key={idx} className="mb-4">
+                                <Card className="shadow-sm h-100">
+                                    <Card.Body>
+                                        <Card.Title>{res.title}</Card.Title>
+                                        <Card.Subtitle className="mb-2 text-muted">
+                                            {res.type} ({res.language})
+                                        </Card.Subtitle>
+                                        <Card.Text>
+                                            Tags: {res.tags?.join(', ') || 'None'}
+                                        </Card.Text>
+                                        <Button variant="primary" onClick={() => fetchSingleResource(res._id)}>
+                                            View Resource
+                                        </Button>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))
+                    )}
                 </Row>
 
                 {/* Modal */}

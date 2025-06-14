@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const { Schema, model } = mongoose;
 
-const ResourcesSchema = new Schema({
+const ResourceSchema = new Schema({
   title: { type: String, required: true },
   type: {
     type: String,
@@ -21,6 +21,6 @@ const ResourcesSchema = new Schema({
   }],
 }, { timestamps: true });
 
-const Resources = model('Resources', ResourcesSchema);
+const Resource = model('Resource', ResourceSchema);
 
-module.exports = Resources;
+module.exports = Resource;

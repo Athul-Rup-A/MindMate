@@ -6,9 +6,9 @@ const CounselorPsychologistSchema = new Schema({
   AliasId: { type: String, required: true, unique: true },
   PasswordHash: { type: String, required: true },
   AvailabilitySlots: [{
-    Date: { type: Date },
-    StartTime: { type: String },
-    EndTime: { type: String },
+    Day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], required: true },
+    StartTime: { type: String, required: true },
+    EndTime: { type: String, required: true },
   }],
   Phone: { type: String },
   FullName: { type: String },

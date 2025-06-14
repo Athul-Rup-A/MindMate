@@ -13,6 +13,7 @@ import Feedback from '../pages/Feedback';
 import SOS from '../pages/SOS';
 import Wellness from '../pages/Wellness';
 import Resource from '../pages/Resource';
+import Report from '../pages/Report';
 
 const StudentRoutes = () => (
   <BrowserRouter>
@@ -74,6 +75,12 @@ const StudentRoutes = () => (
       <Route path="/resource" element={
         <ProtectedRoute>
           <Resource />
+        </ProtectedRoute>
+      }
+      />
+      <Route path="/report" element={
+        <ProtectedRoute>
+          <Report />
         </ProtectedRoute>
       }
       />
