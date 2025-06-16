@@ -8,9 +8,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
 import getCurrentUserId from '../../config/getCurrentUserId';
 import { useNavigate } from 'react-router-dom';
-import CustomTable from '../components/CustomTable';
+import CustomTable from '../../components/CustomTable';
 import Select from 'react-select'
-import GoHomeButton from '../components/GoHomeButton'
+import GoHomeButton from '../../components/GoHomeButton'
 
 const Report = () => {
   const [targetList, setTargetList] = useState([]);

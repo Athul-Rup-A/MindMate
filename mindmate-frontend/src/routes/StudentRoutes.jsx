@@ -2,18 +2,18 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/Protectedroute';
 
-import Signup from '../pages/Signup';
-import Login from '../pages/Login';
-import Profile from '../pages/Profile';
+import Signup from '../pages/student/Signup';
+import Login from '../pages/student/Login';
+import Profile from '../pages/student/Profile';
 import ForceResetPassword from '../components/ForceResetPassword';
-import Appointment from '../pages/Appointment';
-import StudentHome from '../pages/StudentHome';
-import VentWall from '../pages/VentWall';
-import Feedback from '../pages/Feedback';
-import SOS from '../pages/SOS';
-import Wellness from '../pages/Wellness';
-import Resource from '../pages/Resource';
-import Report from '../pages/Report';
+import Appointment from '../pages/student/Appointment';
+import StudentHome from '../pages/student/StudentHome';
+import VentWall from '../pages/student/VentWall';
+import Feedback from '../pages/student/Feedback';
+import SOS from '../pages/student/SOS';
+import Wellness from '../pages/student/Wellness';
+import Resource from '../pages/student/Resource';
+import Report from '../pages/student/Report';
 
 const StudentRoutes = () => (
   <BrowserRouter>

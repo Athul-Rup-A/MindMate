@@ -8,7 +8,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import getCurrentUserId from '../../config/getCurrentUserId';
-import GoHomeButton from '../components/GoHomeButton';
+import GoHomeButton from '../../components/GoHomeButton';
 
 const VentWall = () => {
   const [vents, setVents] = useState([]);

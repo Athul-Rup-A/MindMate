@@ -7,8 +7,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
 import { useNavigate } from 'react-router-dom';
-import CustomTable from '../components/CustomTable'
-import GoHomeButton from '../components/GoHomeButton';
+import CustomTable from '../../components/CustomTable'
+import GoHomeButton from '../../components/GoHomeButton';
 
 const Feedback = () => {
     const [feedbacks, setFeedbacks] = useState([]);

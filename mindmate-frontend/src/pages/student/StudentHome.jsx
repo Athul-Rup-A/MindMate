@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Container } from 'react-bootstrap';
-import CounselorPsychologistDash from '../components/CounselorPsychologistDash';
-import StudentNavbar from '../components/studentNavbar';
-import Footer from '../components/studentFooter';
+import CounselorPsychologistDash from '../../components/CounselorPsychologistDash';
+import StudentNavbar from '../../components/studentNavbar';
+import Footer from '../../components/studentFooter';
 
 const StudentHome = () => {
 

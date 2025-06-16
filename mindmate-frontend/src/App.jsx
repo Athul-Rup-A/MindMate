@@ -1,4 +1,4 @@
-import StudentRoutes from '../src/student/routes/StudentRoutes';
+import StudentRoutes from '../src/routes/StudentRoutes';
 
 function App() {
 
