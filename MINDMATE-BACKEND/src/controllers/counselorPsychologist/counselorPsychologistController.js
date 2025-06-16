@@ -326,6 +326,39 @@ const CounselorPsychologistController = {
         res.status(200).json(feedbacks);
     }),
 
+    // SOS LOGS
+    getSOSLogs: asyncHandler(async (req, res) => {
+        const logs = await SOSLog.find({ AlertedTo: req.user._id })
+            .populate('StudentId', 'AliasId')
+            .sort({ TriggeredAt: -1 });
+
+        if (!logs) {
+            return res.status(404).json({ message: 'SOSLog not found' });
+        };
+
+        res.status(200).json(logs);
+    }),
+
+    respondSOS: asyncHandler(async (req, res) => {
+        const { logId } = req.params;
+        const sos = await SOSLog.findById(logId);
+
+        if (!sos || !sos.AlertedTo.includes(req.user._id)) {
+            return res.status(403).json({ message: 'Unauthorized to respond' });
+        };
+
+        // Prevent duplicate responses
+        if (sos.Status === 'responded') {
+            return res.status(400).json({ message: 'SOS already responded' });
+        };
+
+        sos.RespondedAt = Date.now();
+        sos.Status = 'responded';
+        await sos.save();
+
+        res.status(200).json({ message: 'SOS responded successfully' });
+    }),
+
 };
 
 module.exports = CounselorPsychologistController;
