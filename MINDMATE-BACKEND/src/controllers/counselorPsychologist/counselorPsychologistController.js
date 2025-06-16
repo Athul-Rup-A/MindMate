@@ -196,6 +196,58 @@ const CounselorPsychologistController = {
         res.status(200).json({ message: 'Password updated successfully' });
     }),
 
+    // PROFILE
+    getProfile: asyncHandler(async (req, res) => {
+        const user = await CounselorPsychologist.findById(req.user._id).select('-PasswordHash -tempPasswordHash');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json(user);
+    }),
+
+    updateProfile: asyncHandler(async (req, res) => {
+        const allowedFields = ['Phone', 'Email', 'FullName', 'Credentials', 'Specialization'];
+        const updates = req.body;
+
+        const isValid = Object.keys(updates).every(field => allowedFields.includes(field));
+        if (!isValid) return res.status(400).json({ message: 'Invalid fields in update' });
+
+        if (updates.Phone && !/^\+?\d{7,15}$/.test(updates.Phone)) {
+            return res.status(400).json({ message: 'Phone must be a valid phone number' });
+        };
+
+        const updated = await CounselorPsychologist.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-PasswordHash');
+        res.status(200).json(updated);
+    }),
+
+    changePassword: asyncHandler(async (req, res) => {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Both current and new passwords are required' });
+        };
+
+        const user = await CounselorPsychologist.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
+        if (!isMatch) return res.status(401).json({ message: 'Current password incorrect' });
+
+        if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/.test(newPassword)) {
+            return res.status(400).json({
+                message: 'New password must be at least 6 characters long and include at least one letter and one number',
+            });
+        };
+
+        const isSameAsOld = await bcrypt.compare(newPassword, user.PasswordHash);
+        if (isSameAsOld) {
+            return res.status(400).json({ message: 'New password must be different from the old one' });
+        };
+
+        user.PasswordHash = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        res.status(200).json({ message: 'Password changed successfully' });
+    }),
+
 };
 
 module.exports = CounselorPsychologistController;
