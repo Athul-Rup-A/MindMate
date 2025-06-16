@@ -22,7 +22,7 @@ const adminRoutes = require('./src/routes/adminRoutes');
 
 // Route Mapping
 app.use('/api/students', studentRoutes);
-// app.use('/api/counselorPsychologist', counselorPsychologistRoutes);
+app.use('/api/counselorPsychologist', counselorPsychologistRoutes);
 // app.use('/api/admin', adminRoutes);
 
 // Error Middleware
