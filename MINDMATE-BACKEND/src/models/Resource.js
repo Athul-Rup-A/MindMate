@@ -14,6 +14,11 @@ const ResourceSchema = new Schema({
     required: true,
     enum: ['English', 'Hindi', 'Tamil', 'Malayalam'],
   },
+  CreatedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'CounselorPsychologist',
+  required: true
+}, 
   link: { type: String, required: true },
   tags: [{
     type: String,

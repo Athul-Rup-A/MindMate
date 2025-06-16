@@ -20,6 +20,15 @@ const SOSLogSchema = new Schema({
   TriggeredAt: {
     type: Date,
     default: Date.now
+  },
+  RespondedAt: {
+    type: Date,
+    default: null // Only filled after a response
+  },
+  Status: {
+    type: String,
+    enum: ['pending', 'responded'],
+    default: 'pending'
   }
 }, { timestamps: true });
 
