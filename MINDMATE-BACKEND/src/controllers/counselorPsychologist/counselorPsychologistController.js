@@ -248,6 +248,39 @@ const CounselorPsychologistController = {
         res.status(200).json({ message: 'Password changed successfully' });
     }),
 
+    // APPOINTMENTS
+    getAppointments: asyncHandler(async (req, res) => {
+        const appointments = await Appointment.find({ CounselorId: req.user._id })
+            .populate('StudentId', 'AliasId')
+            .sort({ SlotDate: -1 });
+
+        if (!appointments) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        };
+
+        res.status(200).json(appointments);
+    }),
+
+    updateAppointmentStatus: asyncHandler(async (req, res) => {
+        const { id, appointmentId } = req.params;
+        const { status } = req.body;
+
+        const allowedStatuses = ['confirmed', 'rejected', 'completed', 'cancelled'];
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({ message: 'Invalid status value' });
+        }
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment || appointment.CounselorId.toString() !== id) {
+            return res.status(404).json({ message: 'Appointment not found or access denied' });
+        }
+
+        appointment.Status = status;
+        await appointment.save();
+
+        res.status(200).json({ message: 'Appointment status updated' });
+    }),
+
 };
 
 module.exports = CounselorPsychologistController;
