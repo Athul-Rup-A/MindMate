@@ -313,6 +313,19 @@ const CounselorPsychologistController = {
         res.status(200).json(user.AvailabilitySlots);
     }),
 
+    // FEEDBACKS
+    getFeedbacks: asyncHandler(async (req, res) => {
+        const feedbacks = await Feedback.find({ StudentId: { $exists: true }, Type: 'session' })
+            .populate('StudentId', 'AliasId')
+            .sort({ CreatedAt: -1 });
+
+        if (!feedbacks) {
+            return res.status(404).json({ message: 'Feedback not found' });
+        }
+
+        res.status(200).json(feedbacks);
+    }),
+
 };
 
 module.exports = CounselorPsychologistController;
