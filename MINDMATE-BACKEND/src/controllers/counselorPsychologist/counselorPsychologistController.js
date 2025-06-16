@@ -281,6 +281,38 @@ const CounselorPsychologistController = {
         res.status(200).json({ message: 'Appointment status updated' });
     }),
 
+    // AVAILABILITY
+    getAvailability: asyncHandler(async (req, res) => {
+        const user = await CounselorPsychologist.findById(req.user._id).select('AvailabilitySlots');
+
+        if (!user) {
+            return res.status(404).json({ message: 'AvailabilitySlots not found' });
+        };
+
+        res.status(200).json(user.AvailabilitySlots);
+    }),
+
+    updateAvailability: asyncHandler(async (req, res) => {
+        const { AvailabilitySlots } = req.body;
+
+        if (!Array.isArray(AvailabilitySlots)) {
+            return res.status(400).json({ message: 'Availability must be an array' });
+        };
+
+        // Check for each slot has Day, StartTime, EndTime
+        if (!AvailabilitySlots.every(s => s.Day && s.StartTime && s.EndTime)) {
+            return res.status(400).json({ message: 'Each slot must have Day, StartTime, and EndTime' });
+        };
+
+        const user = await CounselorPsychologist.findByIdAndUpdate(req.user._id, { AvailabilitySlots }, { new: true });
+
+        if (!user) {
+            return res.status(404).json({ message: 'AvailabilitySlots not found' });
+        };
+
+        res.status(200).json(user.AvailabilitySlots);
+    }),
+
 };
 
 module.exports = CounselorPsychologistController;
