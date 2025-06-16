@@ -8,8 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import authHeader from '../../config/authHeader';
 import Select from 'react-select';
-import CustomTable from '../components/CustomTable';
-import GoHomeButton from '../components/GoHomeButton';
+import CustomTable from '../../components/CustomTable';
+import GoHomeButton from '../../components/GoHomeButton';
 
 const Wellness = () => {
     const [moodEntries, setMoodEntries] = useState([]);

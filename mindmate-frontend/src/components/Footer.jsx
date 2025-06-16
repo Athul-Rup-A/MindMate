@@ -1,6 +1,6 @@
 import React from 'react';
 
-const studentFooter = () => {
+const Footer = () => {
     return (
         <div className="text-center py-3 mt-5 bg-light border-top">
             <small>&copy; {new Date().getFullYear()} MindMate. All rights reserved.</small>
@@ -8,4 +8,4 @@ const studentFooter = () => {
     );
 };
 
-export default studentFooter;
+export default Footer;

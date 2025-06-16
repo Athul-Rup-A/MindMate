@@ -8,7 +8,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import GoHomeButton from '../components/GoHomeButton';
+import GoHomeButton from '../../components/GoHomeButton';
 
 const Profile = () => {
   const [profile, setProfile] = useState({ AliasId: '', Phone: '' });

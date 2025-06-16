@@ -6,7 +6,7 @@ import { Formik, Field } from 'formik';
 import * as Yup from 'yup';
 import authHeader from '../../config/authHeader';
 import { useNavigate } from 'react-router-dom';
-import GoHomeButton from '../components/GoHomeButton';
+import GoHomeButton from '../../components/GoHomeButton';
 
 const BASE_URL = 'http://localhost:5000/api/students';
 

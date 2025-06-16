@@ -4,7 +4,7 @@ import { Card, Button, Container, Row, Col } from 'react-bootstrap';
 import { StarFill, CalendarCheckFill } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
-import authHeader from '../../config/authHeader';
+import authHeader from '../config/authHeader';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CounselorPsychologistDash = () => {
