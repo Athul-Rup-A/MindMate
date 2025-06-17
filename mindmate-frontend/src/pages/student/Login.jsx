@@ -41,7 +41,12 @@ const Login = () => {
       if (mustChangePassword) {
         toast.info('Temporary password. Please reset it.');
         setTimeout(() => {
-          navigate('/force-reset-password', { state: { studentId: student._id } });
+          navigate('/force-reset-password', {
+            state: {
+              userId: student._id,
+              role: 'student',
+            },
+          });
         }, 3700);
       } else {
         toast.success('Login successful!');
@@ -229,7 +234,7 @@ const Login = () => {
                       <Button
                         variant="link"
                         className="text-decoration-none"
-                        onClick={() => navigate('/signup')}
+                        onClick={() => navigate('/signup/student')}
                       >
                         Don't have an account?
                       </Button>

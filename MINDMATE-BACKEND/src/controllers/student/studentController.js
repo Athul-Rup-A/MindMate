@@ -175,9 +175,9 @@ const studentController = {
   }),
 
   setNewPassword: asyncHandler(async (req, res) => {
-    const { studentId, newPassword } = req.body;
-    if (!studentId || !newPassword) {
-      return res.status(400).json({ message: 'Student ID and new password required' });
+    const { userId, newPassword } = req.body;
+    if (!userId || !newPassword) {
+      return res.status(400).json({ message: 'User ID and new password required' });
     }
 
     if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
@@ -186,7 +186,7 @@ const studentController = {
       });
     }
 
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(userId);
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
     const isSame = await bcrypt.compare(newPassword, student.PasswordHash);

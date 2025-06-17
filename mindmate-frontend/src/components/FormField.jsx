@@ -1,15 +1,38 @@
 import { Field, ErrorMessage } from 'formik';
+import { Form, InputGroup, Button } from 'react-bootstrap';
+import { useState } from 'react';
+import { EyeFill, EyeSlashFill } from 'react-bootstrap-icons';
 
-const FormField = ({ label, name, type = 'text', placeholder }) => (
-    <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <Field
-            name={name}
-            type={type}
-            placeholder={placeholder}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring focus:ring-indigo-200 p-2"
-        />
-        <ErrorMessage name={name} component="div" className="text-red-500 text-sm mt-1" />
-    </div>
-);
+const FormField = ({ label, name, type = 'text', placeholder, icon }) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const inputType = type === 'password' ? (showPassword ? 'text' : 'password') : type;
+
+    return (
+        <Form.Group className="mb-4">
+            {label && <Form.Label>{label}</Form.Label>}
+            <InputGroup>
+                {icon && <InputGroup.Text>{icon}</InputGroup.Text>}
+
+                <Field
+                    name={name}
+                    as={Form.Control}
+                    type={inputType}
+                    placeholder={placeholder}
+                />
+
+                {type === 'password' && (
+                    <Button
+                        variant="outline-secondary"
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                    >
+                        {showPassword ? <EyeSlashFill /> : <EyeFill />}
+                    </Button>
+                )}
+            </InputGroup>
+            <ErrorMessage name={name} component="div" className="text-danger small mt-1" />
+        </Form.Group>
+    );
+};
+
 export default FormField;

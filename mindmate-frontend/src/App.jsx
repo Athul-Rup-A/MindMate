@@ -1,5 +1,4 @@
-import StudentRoutes from '../src/routes/StudentRoutes';
-import CounselorPsychologistRoutes from '../src/routes/CounselorPsychologistRoutes';
+import AppRoutes from './routes/AppRoutes';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -7,8 +6,7 @@ function App() {
 
   return (
     <>
-      <StudentRoutes />
-      <CounselorPsychologistRoutes />
+      <AppRoutes />
       <ToastContainer position="top-right" autoClose={3000} />
     </>
   );

@@ -11,8 +11,12 @@ import 'react-toastify/dist/ReactToastify.css';
 const ForceResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const studentId = location.state?.studentId;
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const userId = location.state?.userId;
+  const role = location.state?.role || 'student';
+  const BASE_URL = import.meta.env.VITE_API_URL ||
+    (role === 'student'
+      ? 'http://localhost:5000/api/students'
+      : 'http://localhost:5000/api/counselorPsychologist');
 
   const ResetSchema = Yup.object().shape({
     newPassword: Yup.string()
@@ -26,21 +30,20 @@ const ForceResetPassword = () => {
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
-    if (!studentId) {
+    if (!userId) {
       toast.error('Session expired. Please log in again.');
-      navigate('/login');
-      return;
+      navigate(role === 'counselorPsychologist' ? '/login/counselorpsychologist' : '/login/student'); return;
     }
 
     try {
       const res = await axios.put(`${BASE_URL}/set-new-password`, {
-        studentId,
+        userId,
         newPassword: values.newPassword,
       });
 
       toast.success(res.data.message || 'Password reset successful');
       setTimeout(() => {
-        navigate('/login');
+        navigate(role === 'counselorPsychologist' ? '/login/counselorpsychologist' : '/login/student');
       }, 4000);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to reset password');

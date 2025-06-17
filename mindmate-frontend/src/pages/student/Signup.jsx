@@ -34,7 +34,7 @@ const Signup = () => {
     try {
       await axios.post(`${BASE_URL}/signup`, values);
       toast.success('Signup successful! You can now log in.');
-      setTimeout(() => navigate('/login'), 3700);
+      setTimeout(() => navigate('/login/student'), 3700);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -184,7 +184,7 @@ const Signup = () => {
                   <Button
                     variant="link"
                     className="text-decoration-none"
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/login/student')}
                   >
                     Already have an account?
                   </Button>

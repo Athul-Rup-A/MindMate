@@ -13,30 +13,38 @@ const Appointment = require('../../models/Appointment');
 const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
 
+// Validation regex
+const regex = {
+    aliasId: /^[a-zA-Z0-9_]{4,20}$/,
+    password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/,
+    phone: /^\d{10}$/,
+    email: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+};
+
 const CounselorPsychologistController = {
 
     // AUTH
     signupCounselorPsychologist: asyncHandler(async (req, res) => {
-        const { AliasId, password, phone, email, fullName, role } = req.body;
+        const { AliasId, password, phone, email, fullName, role, specialization, credentials } = req.body;
 
-        if (!AliasId || !password || !phone || !email || !fullName || !role)
+        if (!AliasId || !password || !phone || !email || !fullName || !role || !specialization || !credentials)
             return res.status(400).json({ message: 'All fields are required' });
 
-        if (!/^[a-zA-Z0-9_]{4,20}$/.test(AliasId)) {
+        if (!regex.aliasId.test(AliasId)) {
             return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
         }
 
-        if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/.test(password)) {
+        if (!regex.password.test(password)) {
             return res.status(400).json({
                 message: 'Password must be at least 6 characters long and contain at least one letter and one number',
             });
         }
 
-        if (!/^\d{10}$/.test(phone)) {
+        if (!regex.phone.test(phone)) {
             return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
         }
 
-        if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(req.body.email)) {
+        if (!regex.email.test(req.body.email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
@@ -66,6 +74,8 @@ const CounselorPsychologistController = {
             Email: email,
             FullName: fullName,
             Role: role,
+            Credentials: credentials,
+  Specialization: specialization,
             ApprovedByAdmin: false,
             Status: 'pending',
         });
@@ -173,7 +183,7 @@ const CounselorPsychologistController = {
             return res.status(400).json({ message: 'User ID and new password required' });
         }
 
-        if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/.test(newPassword)) {
+        if (!regex.password.test(newPassword)) {
             return res.status(400).json({
                 message: 'Password must be at least 6 characters long and contain at least one letter and one number',
             });
@@ -210,8 +220,11 @@ const CounselorPsychologistController = {
         const isValid = Object.keys(updates).every(field => allowedFields.includes(field));
         if (!isValid) return res.status(400).json({ message: 'Invalid fields in update' });
 
-        if (updates.Phone && !/^\+?\d{7,15}$/.test(updates.Phone)) {
+        if (updates.Phone && !regex.phone.test(updates.Phone)) {
             return res.status(400).json({ message: 'Phone must be a valid phone number' });
+        };
+        if (updates.Email && !regex.email.test(updates.Email)) {
+            return res.status(400).json({ message: 'Email format is invalid' });
         };
 
         const updated = await CounselorPsychologist.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-PasswordHash');
@@ -231,7 +244,7 @@ const CounselorPsychologistController = {
         const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
         if (!isMatch) return res.status(401).json({ message: 'Current password incorrect' });
 
-        if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/.test(newPassword)) {
+        if (!regex.password.test(newPassword)) {
             return res.status(400).json({
                 message: 'New password must be at least 6 characters long and include at least one letter and one number',
             });
@@ -254,9 +267,7 @@ const CounselorPsychologistController = {
             .populate('StudentId', 'AliasId')
             .sort({ SlotDate: -1 });
 
-        if (!appointments) {
-            return res.status(404).json({ message: 'Appointment not found' });
-        };
+        if (!appointments.length) { return res.status(404).json({ message: 'No appointments found' }); }
 
         res.status(200).json(appointments);
     }),
@@ -319,9 +330,7 @@ const CounselorPsychologistController = {
             .populate('StudentId', 'AliasId')
             .sort({ CreatedAt: -1 });
 
-        if (!feedbacks) {
-            return res.status(404).json({ message: 'Feedback not found' });
-        }
+        if (!feedbacks.length) { return res.status(404).json({ message: 'No feedbacks found' }); }
 
         res.status(200).json(feedbacks);
     }),
@@ -332,9 +341,7 @@ const CounselorPsychologistController = {
             .populate('StudentId', 'AliasId')
             .sort({ TriggeredAt: -1 });
 
-        if (!logs) {
-            return res.status(404).json({ message: 'SOSLog not found' });
-        };
+        if (!logs.length) { return res.status(404).json({ message: 'No SOSLogs found' }); }
 
         res.status(200).json(logs);
     }),

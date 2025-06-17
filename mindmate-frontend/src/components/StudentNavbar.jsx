@@ -38,7 +38,7 @@ const StudentNavbar = () => {
                 <Modal.Footer className="d-flex flex-column gap-2">
                     <Button className="w-50" variant="danger" onClick={() => {
                         localStorage.removeItem('token');
-                        navigate('/login');
+                        navigate('/login/student');
                     }}>Logout</Button>
                     <Button className="w-50" variant="secondary" onClick={() => setShowLogoutModal(false)}>
                         Cancel
