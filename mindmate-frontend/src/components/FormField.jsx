@@ -3,7 +3,7 @@ import { Form, InputGroup, Button } from 'react-bootstrap';
 import { useState } from 'react';
 import { EyeFill, EyeSlashFill } from 'react-bootstrap-icons';
 
-const FormField = ({ label, name, type = 'text', placeholder, icon }) => {
+const FormField = ({ label, name, type = 'text', placeholder, icon, ...props }) => {
     const [showPassword, setShowPassword] = useState(false);
     const inputType = type === 'password' ? (showPassword ? 'text' : 'password') : type;
 
@@ -18,6 +18,7 @@ const FormField = ({ label, name, type = 'text', placeholder, icon }) => {
                     as={Form.Control}
                     type={inputType}
                     placeholder={placeholder}
+                    {...props} // Disabled or readOnly
                 />
 
                 {type === 'password' && (

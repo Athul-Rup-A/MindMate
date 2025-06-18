@@ -14,20 +14,27 @@ const Login = () => {
     const navigate = useNavigate();
 
     const LoginSchema = Yup.object().shape({
-        AliasId: Yup.string().when([], {
-            is: () => !showPhone || phonePurpose !== 'forgot-aliasid',
-            then: Yup.string().required('Alias ID is required'),
-        }),
-        password: Yup.string().when([], {
-            is: () => !showPhone || phonePurpose !== 'forgot-password',
-            then: Yup.string().required('Password is required'),
-        }),
-        phone: Yup.string().when([], {
-            is: () => showPhone,
-            then: () =>
-                Yup.string()
+        AliasId: Yup.string().test(
+            'AliasId-required',
+            'Alias ID is required',
+            function (value) {
+                const { showPhone, phonePurpose } = this.options.context || {};
+                return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
+            }
+        ),
+        password: Yup.string().test(
+            'password-required',
+            'Password is required',
+            function (value) {
+                const { showPhone, phonePurpose } = this.options.context || {};
+                return showPhone && phonePurpose === 'forgot-password' ? true : !!value;
+            }
+        ),
+        phone: Yup.string()
                     .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
-                    .required('Phone number is required'),
+            .test('phone-required', 'Phone number is required', function (value) {
+                const { showPhone } = this.options.context || {};
+                return showPhone ? !!value : true;
         }),
     });
 
@@ -104,6 +111,9 @@ const Login = () => {
                     <Formik
                         initialValues={{ AliasId: '', password: '', phone: '' }}
                         validationSchema={LoginSchema}
+                        validateOnBlur={false}
+                        validateOnChange={false}
+                        context={{ showPhone, phonePurpose }}
                         onSubmit={handleLogin}
                     >
                         {({ isSubmitting, values, resetForm }) => (

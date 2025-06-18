@@ -75,7 +75,7 @@ const CounselorPsychologistController = {
             FullName: fullName,
             Role: role,
             Credentials: credentials,
-  Specialization: specialization,
+            Specialization: specialization,
             ApprovedByAdmin: false,
             Status: 'pending',
         });
@@ -92,6 +92,10 @@ const CounselorPsychologistController = {
 
         const user = await CounselorPsychologist.findOne({ AliasId });
         if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (!user.ApprovedByAdmin) {
+            return res.status(403).json({ message: 'Your account is pending admin approval.' });
+        };
 
         let isMatch = false;
 

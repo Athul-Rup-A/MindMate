@@ -22,6 +22,7 @@ import Report from '../pages/student/Report';
 // CounselorPsychologist pages
 import CounselorPsychologistSignup from '../pages/counselorPsychologist/Signup';
 import CounselorPsychologistLogin from '../pages/counselorPsychologist/Login';
+import CounselorPsychologistProfile from '../pages/counselorPsychologist/Profile';
 
 const AppRoutes = () => (
   <BrowserRouter>
@@ -74,7 +75,9 @@ const AppRoutes = () => (
 
       {/* Counselor&Psychologist Protected Routes */}
 
-
+      <Route path="/profile/counselorpsychologist" element={
+        <ProtectedRoute><CounselorPsychologistProfile /></ProtectedRoute>
+      } />
 
     </Routes>
   </BrowserRouter>
