@@ -41,7 +41,7 @@ const ForceResetPassword = () => {
         newPassword: values.newPassword,
       });
 
-      toast.success(res.data.message || 'Password reset successful');
+      toast.success(res.data.message || 'Password reset successful, Please Login again!');
       setTimeout(() => {
         navigate(role === 'counselorPsychologist' ? '/login/counselorpsychologist' : '/login/student');
       }, 4000);

@@ -267,7 +267,7 @@ const CounselorPsychologistController = {
 
     // APPOINTMENTS
     getAppointments: asyncHandler(async (req, res) => {
-        const appointments = await Appointment.find({ CounselorId: req.user._id })
+        const appointments = await Appointment.find({ CounselorPsychologistId: req.user._id })
             .populate('StudentId', 'AliasId')
             .sort({ SlotDate: -1 });
 
@@ -277,16 +277,17 @@ const CounselorPsychologistController = {
     }),
 
     updateAppointmentStatus: asyncHandler(async (req, res) => {
-        const { id, appointmentId } = req.params;
+        const { appointmentId } = req.params;
+        const userId = req.user._id;
         const { status } = req.body;
 
-        const allowedStatuses = ['confirmed', 'rejected', 'completed', 'cancelled'];
+        const allowedStatuses = ['confirmed', 'rejected', 'completed'];
         if (!allowedStatuses.includes(status)) {
             return res.status(400).json({ message: 'Invalid status value' });
         }
 
         const appointment = await Appointment.findById(appointmentId);
-        if (!appointment || appointment.CounselorId.toString() !== id) {
+        if (!appointment || appointment.CounselorPsychologistId.toString() !== userId) {
             return res.status(404).json({ message: 'Appointment not found or access denied' });
         }
 

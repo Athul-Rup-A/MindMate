@@ -22,19 +22,13 @@ router.get('/profile', CouncPsychoAuth, CounselorPsychologistController.getProfi
 router.put('/change-profile-password', CouncPsychoAuth, CounselorPsychologistController.changePassword);
 router.put('/profile', CouncPsychoAuth, CounselorPsychologistController.updateProfile);
 
-// Availability slots
-router.get('/availability', CouncPsychoAuth, CounselorPsychologistController.getAvailability);
-router.put('/availability', CouncPsychoAuth, CounselorPsychologistController.updateAvailability);
-
 // Appointment handling
 router.get('/appointments', CouncPsychoAuth, CounselorPsychologistController.getAppointments);
 router.put('/appointments/:appointmentId/status', CouncPsychoAuth, CounselorPsychologistController.updateAppointmentStatus);
 
-// Resource management
-router.post('/resources', CouncPsychoAuth, resourceController.createResource);
-router.get('/resources', CouncPsychoAuth, resourceController.getOwnResources);
-router.put('/resources/:id', CouncPsychoAuth, resourceController.updateResource);
-router.delete('/resources/:id', CouncPsychoAuth, resourceController.deleteResource);
+// Availability slots
+router.get('/availability', CouncPsychoAuth, CounselorPsychologistController.getAvailability);
+router.put('/availability', CouncPsychoAuth, CounselorPsychologistController.updateAvailability);
 
 // Feedback view
 router.get('/feedback', CouncPsychoAuth, CounselorPsychologistController.getFeedbacks);
@@ -42,5 +36,11 @@ router.get('/feedback', CouncPsychoAuth, CounselorPsychologistController.getFeed
 // SOS logs
 router.get('/sos', CouncPsychoAuth, CounselorPsychologistController.getSOSLogs);
 router.put('/sos/respond/:logId', CouncPsychoAuth, CounselorPsychologistController.respondSOS);
+
+// Resource management
+router.post('/resources', CouncPsychoAuth, resourceController.createResource);
+router.get('/resources', CouncPsychoAuth, resourceController.getOwnResources);
+router.put('/resources/:id', CouncPsychoAuth, resourceController.updateResource);
+router.delete('/resources/:id', CouncPsychoAuth, resourceController.deleteResource);
 
 module.exports = router;

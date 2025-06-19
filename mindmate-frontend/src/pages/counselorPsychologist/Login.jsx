@@ -8,17 +8,12 @@ import { TelephoneFill, ClipboardFill, LockFill } from 'react-bootstrap-icons';
 import { Formik, Form as FormikForm } from 'formik';
 import * as Yup from 'yup';
 
-const Login = () => {
-    const [showPhone, setShowPhone] = useState(false);
-    const [phonePurpose, setPhonePurpose] = useState('');
-    const navigate = useNavigate();
-
-    const LoginSchema = Yup.object().shape({
+const LoginSchema = (showPhone, phonePurpose) =>
+    Yup.object().shape({
         AliasId: Yup.string().test(
             'AliasId-required',
             'Alias ID is required',
             function (value) {
-                const { showPhone, phonePurpose } = this.options.context || {};
                 return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
             }
         ),
@@ -26,17 +21,20 @@ const Login = () => {
             'password-required',
             'Password is required',
             function (value) {
-                const { showPhone, phonePurpose } = this.options.context || {};
                 return showPhone && phonePurpose === 'forgot-password' ? true : !!value;
             }
         ),
         phone: Yup.string()
-                    .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
+            .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
             .test('phone-required', 'Phone number is required', function (value) {
-                const { showPhone } = this.options.context || {};
                 return showPhone ? !!value : true;
-        }),
+            }),
     });
+
+const Login = () => {
+    const [showPhone, setShowPhone] = useState(false);
+    const [phonePurpose, setPhonePurpose] = useState('');
+    const navigate = useNavigate();
 
     const handleLogin = async (values, { setSubmitting }) => {
         try {
@@ -57,6 +55,9 @@ const Login = () => {
                 }, 3500);
             } else {
                 toast.success('Login successful!');
+                setTimeout(() => {
+                    navigate('/appointments/counselorpsychologist');
+                }, 3500);
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Login failed');
@@ -66,9 +67,8 @@ const Login = () => {
     };
 
     const handlePhoneAction = async (values) => {
-        if (!values.phone) {
-            toast.warning('Please enter your phone number');
-            return;
+        if (!values.phone || !/^[6-9]\d{9}$/.test(values.phone)) {
+            toast.warning('Please enter a valid 10-digit phone number'); return;
         }
 
         try {
@@ -110,10 +110,9 @@ const Login = () => {
 
                     <Formik
                         initialValues={{ AliasId: '', password: '', phone: '' }}
-                        validationSchema={LoginSchema}
-                        validateOnBlur={false}
+                        validationSchema={LoginSchema(showPhone, phonePurpose)}
+                        validateOnBlur={true}
                         validateOnChange={false}
-                        context={{ showPhone, phonePurpose }}
                         onSubmit={handleLogin}
                     >
                         {({ isSubmitting, values, resetForm }) => (
