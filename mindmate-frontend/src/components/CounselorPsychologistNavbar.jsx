@@ -13,7 +13,7 @@ const CounselorPsychologistNavbar = () => {
 
             <div className="d-flex gap-3">
                 <Button variant="outline-dark" size="sm" onClick={() => navigate('/profile/counselorpsychologist')}>Profile</Button>
-                <Button variant="outline-dark" onClick={() => navigate('/resource/counselorpsychologist')}>Manage Resources</Button>
+                <Button variant="outline-dark" onClick={() => navigate('/availability/counselorpsychologist')}>Availability</Button>
                 <Button variant="dark" size="sm" onClick={() => setShowMenu(true)}>Menu</Button>
             </div>
 
@@ -22,6 +22,7 @@ const CounselorPsychologistNavbar = () => {
                     <Offcanvas.Title>Navigation</Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body className="d-flex flex-column gap-2">
+                    <Button variant="outline-dark" onClick={() => navigate('/resource/counselorpsychologist')}>Manage Resources</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/feedback/counselorpsychologist')}>Feedbacks</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/sos/counselorpsychologist')}>SOS Logs</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/report/counselorpsychologist')}>Reports</Button>
