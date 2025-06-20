@@ -20,7 +20,15 @@ const FeedbackSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Student',
     required: true
-  }
+  },
+  CounselorPsychologistId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CounselorPsychologist'
+  },
+  AppointmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Appointment'
+  },
 }, { timestamps: true });
 
 const Feedback = mongoose.model('Feedback', FeedbackSchema);

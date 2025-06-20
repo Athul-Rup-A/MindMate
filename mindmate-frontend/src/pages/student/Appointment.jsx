@@ -152,7 +152,7 @@ const Appointment = () => {
   const columns = [
     {
       header: 'Counselor/Psychologist',
-      accessor: 'CounselorPsychologistId',
+      accessor: (item) => item.CounselorPsychologistId?.FullName || 'N/A',
     },
     {
       header: 'Date',

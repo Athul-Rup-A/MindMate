@@ -271,8 +271,6 @@ const CounselorPsychologistController = {
             .populate('StudentId', 'AliasId')
             .sort({ SlotDate: -1 });
 
-        if (!appointments.length) { return res.status(404).json({ message: 'No appointments found' }); }
-
         res.status(200).json(appointments);
     }),
 
@@ -336,10 +334,6 @@ const CounselorPsychologistController = {
             .populate('AppointmentId')
             .sort({ CreatedAt: -1 });
 
-        if (!feedbacks.length) {
-            return res.status(404).json({ message: 'No feedbacks found' });
-        }
-
         res.status(200).json(feedbacks);
     }),
 
@@ -348,8 +342,6 @@ const CounselorPsychologistController = {
         const logs = await SOSLog.find({ AlertedTo: req.user._id })
             .populate('StudentId', 'AliasId')
             .sort({ TriggeredAt: -1 });
-
-        if (!logs.length) { return res.status(404).json({ message: 'No SOSLogs found' }); }
 
         res.status(200).json(logs);
     }),

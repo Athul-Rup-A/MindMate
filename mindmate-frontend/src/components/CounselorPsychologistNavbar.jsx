@@ -25,7 +25,6 @@ const CounselorPsychologistNavbar = () => {
                     <Button variant="outline-dark" onClick={() => navigate('/resource/counselorpsychologist')}>Manage Resources</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/feedback/counselorpsychologist')}>Feedbacks</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/sos/counselorpsychologist')}>SOS Logs</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/report/counselorpsychologist')}>Reports</Button>
                     <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
                 </Offcanvas.Body>
             </Offcanvas>
