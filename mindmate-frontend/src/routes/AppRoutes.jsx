@@ -25,6 +25,7 @@ import CounselorPsychologistLogin from '../pages/counselorPsychologist/Login';
 import CounselorPsychologistProfile from '../pages/counselorPsychologist/Profile';
 import CounselorPsychologistAppointment from '../pages/counselorPsychologist/Appointment';
 import CounselorPsychologistAvailability from '../pages/counselorPsychologist/Availability';
+import CounselorPsychologistFeedback from '../pages/counselorPsychologist/Feedback';
 
 const AppRoutes = () => (
   <BrowserRouter>
@@ -87,6 +88,10 @@ const AppRoutes = () => (
 
       <Route path="/availability/counselorpsychologist" element={
         <ProtectedRoute><CounselorPsychologistAvailability /></ProtectedRoute>
+      } />
+
+      <Route path="/feedback/counselorpsychologist" element={
+        <ProtectedRoute><CounselorPsychologistFeedback /></ProtectedRoute>
       } />
 
     </Routes>

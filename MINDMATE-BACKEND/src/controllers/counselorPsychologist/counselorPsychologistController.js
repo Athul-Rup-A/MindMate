@@ -333,9 +333,12 @@ const CounselorPsychologistController = {
     getFeedbacks: asyncHandler(async (req, res) => {
         const feedbacks = await Feedback.find({ StudentId: { $exists: true }, Type: 'session' })
             .populate('StudentId', 'AliasId')
+            .populate('AppointmentId')
             .sort({ CreatedAt: -1 });
 
-        if (!feedbacks.length) { return res.status(404).json({ message: 'No feedbacks found' }); }
+        if (!feedbacks.length) {
+            return res.status(404).json({ message: 'No feedbacks found' });
+        }
 
         res.status(200).json(feedbacks);
     }),
