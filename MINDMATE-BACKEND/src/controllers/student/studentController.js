@@ -342,7 +342,9 @@ const studentController = {
   }),
 
   getMyAppointments: asyncHandler(async (req, res) => {
-    const appointments = await Appointment.find({ StudentId: req.user._id });
+    const appointments = await Appointment.find({ StudentId: req.user._id })
+      .populate('CounselorPsychologistId', 'FullName')
+      .sort({ SlotDate: -1 });
 
     if (!appointments) {
       return res.status(404).json({ message: 'Appointment not found' });
@@ -565,7 +567,7 @@ const studentController = {
 
   // FEEDBACKS
   createFeedback: asyncHandler(async (req, res) => {
-    const { Rating, Comment, Type } = req.body;
+    const { Rating, Comment, Type, CounselorPsychologistId, AppointmentId } = req.body;
 
     // Validate Rating
     if (Rating === undefined || Rating < 1 || Rating > 5) {
@@ -578,8 +580,27 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid or missing feedback type' });
     }
 
+    let resolvedAppointmentId = AppointmentId;
+
+    // Auto-resolve latest appointment if not provided and type is session
+    if (Type === 'session' && !AppointmentId && CounselorPsychologistId) {
+      const recentAppointment = await Appointment.findOne({
+        StudentId: req.user._id,
+        CounselorPsychologistId,
+      })
+        .sort({ SlotDate: -1 });
+
+      if (!recentAppointment) {
+        return res.status(400).json({ message: 'No recent appointment found for this counselor' });
+      }
+
+      resolvedAppointmentId = recentAppointment._id;
+    };
+
     const feedback = await Feedback.create({
       StudentId: req.user._id,
+      CounselorPsychologistId: CounselorPsychologistId || null,
+      AppointmentId: resolvedAppointmentId || null,
       Rating,
       Comment,
       Type,
@@ -589,9 +610,12 @@ const studentController = {
   }),
 
   getMyFeedbacks: asyncHandler(async (req, res) => {
-    const feedbacks = await Feedback.find({ StudentId: req.user._id }).sort({
-      CreatedAt: -1,
-    });
+    const feedbacks = await Feedback.find({ StudentId: req.user._id })
+      .populate('CounselorPsychologistId', 'FullName')
+      .populate('AppointmentId', 'SlotDate SlotStartTime SlotEndTime')
+      .sort({
+        CreatedAt: -1,
+      });
 
     if (!feedbacks) {
       return res.status(404).json({ message: 'Feedback not found' });
