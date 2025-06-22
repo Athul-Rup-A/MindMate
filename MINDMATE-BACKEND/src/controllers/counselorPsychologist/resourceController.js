@@ -2,8 +2,12 @@ const Resource = require('../../models/Resource');
 const asyncHandler = require('../../utils/asyncHandler');
 
 const isValidURL = (url) => {
-    const urlRegex = /^(https?:\/\/)?([\w\-])+\.{1}([a-zA-Z]{2,63})([\/\w\-]*)*\/?$/;
-    return urlRegex.test(url);
+    try {
+        new URL(url); // Native check
+        return true;
+    } catch (err) {
+        return false;
+    }
 };
 
 const allowedTypes = ['video', 'article', 'podcast', 'guide'];
@@ -32,6 +36,9 @@ const resourceController = {
             return res.status(400).json({ error: 'One or more tags are invalid.' });
         }
 
+        console.log('Request by:', req.userId);
+
+
         const resource = new Resource({
             title,
             type,
@@ -48,8 +55,6 @@ const resourceController = {
     getOwnResources: asyncHandler(async (req, res) => {
         const resources = await Resource.find({ CreatedBy: req.userId })
             .populate('CreatedBy', 'FullName Role');
-
-        if (!resources) { return res.status(404).json({ message: 'No resources found' }); }
 
         res.json(resources);
     }),

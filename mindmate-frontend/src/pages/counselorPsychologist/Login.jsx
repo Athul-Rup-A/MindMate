@@ -3,8 +3,8 @@ import axios from '../../config/axios';
 import FormField from '../../components/FormField';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Card, Row, Col, Button } from 'react-bootstrap';
-import { TelephoneFill, ClipboardFill, LockFill } from 'react-bootstrap-icons';
+import { Container, Card, Row, Col, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { TelephoneFill, ClipboardFill, LockFill, InfoCircle } from 'react-bootstrap-icons';
 import { Formik, Form as FormikForm } from 'formik';
 import * as Yup from 'yup';
 
@@ -17,13 +17,18 @@ const LoginSchema = (showPhone, phonePurpose) =>
                 return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
             }
         ),
-        password: Yup.string().test(
-            'password-required',
-            'Password is required',
-            function (value) {
-                return showPhone && phonePurpose === 'forgot-password' ? true : !!value;
-            }
-        ),
+        password: Yup.string()
+            .matches(
+                /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
+                'At least 6 characters, with 1 letter and 1 number'
+            )
+            .test(
+                'password-required',
+                'Password is required',
+                function (value) {
+                    return showPhone && phonePurpose === 'forgot-password' ? true : !!value;
+                }
+            ),
         phone: Yup.string()
             .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
             .test('phone-required', 'Phone number is required', function (value) {
@@ -132,7 +137,21 @@ const Login = () => {
                                                 {phonePurpose !== 'forgot-password' && (
                                                     <FormField
                                                         name="password"
-                                                        label="Password"
+                                                        label={
+                                                            <>
+                                                                Password{' '}
+                                                                <OverlayTrigger
+                                                                    placement="right"
+                                                                    overlay={
+                                                                        <Tooltip>
+                                                                            Your secure login password which contain at least 6 characters, 1 letter, and 1 number.
+                                                                        </Tooltip>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
+                                                                </OverlayTrigger>
+                                                            </>
+                                                        }
                                                         type="password"
                                                         placeholder="Enter your password"
                                                         icon={<LockFill />}

@@ -3,7 +3,7 @@ import axios from '../../config/axios';
 import FormField from '../../components/FormField';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Form, Button, Card, Row, Col } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { InfoCircle, PersonFill, TelephoneFill, LockFill, EnvelopeFill, ClipboardFill, BriefcaseFill } from 'react-bootstrap-icons';
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -14,7 +14,7 @@ const SignupSchema = Yup.object().shape({
     password: Yup.string()
         .matches(
             /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
-            'At least 6 characters, including 1 letter & 1 number'
+            'At least 6 characters, including 1 letter, and 1 number'
         )
         .required('Password is required'),
     email: Yup.string().email('Invalid email').required('Email is required'),
@@ -83,9 +83,23 @@ const Signup = () => {
                                             icon={<PersonFill />}
                                         />
                                         <FormField
-                                            label="Alias ID"
+                                            label={
+                                                <>
+                                                    Alias ID{' '}
+                                                    <OverlayTrigger
+                                                        placement="right"
+                                                        overlay={
+                                                            <Tooltip>
+                                                                This will serve as your LoginID!
+                                                            </Tooltip>
+                                                        }
+                                                    >
+                                                        <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
+                                                    </OverlayTrigger>
+                                                </>
+                                            }
                                             name="AliasId"
-                                            placeholder="Alias ID such as psy001"
+                                            placeholder="Ex. PSY001"
                                             icon={<ClipboardFill />}
                                         />
                                         <FormField
@@ -105,7 +119,21 @@ const Signup = () => {
 
                                     <Col md={6}>
                                         <FormField
-                                            label="Password"
+                                            label={
+                                                <>
+                                                    Password{' '}
+                                                    <OverlayTrigger
+                                                        placement="right"
+                                                        overlay={
+                                                            <Tooltip>
+                                                                At least 6 characters, including 1 letter, and 1 number
+                                                            </Tooltip>
+                                                        }
+                                                    >
+                                                        <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
+                                                    </OverlayTrigger>
+                                                </>
+                                            }
                                             name="password"
                                             type="password"
                                             placeholder="Create password"
