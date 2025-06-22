@@ -13,7 +13,7 @@ const CounselorPsychologistNavbar = () => {
 
             <div className="d-flex gap-3">
                 <Button variant="outline-dark" size="sm" onClick={() => navigate('/profile/counselorpsychologist')}>Profile</Button>
-                <Button variant="outline-dark" onClick={() => navigate('/availability/counselorpsychologist')}>Availability</Button>
+                <Button variant="outline-dark" size="sm" onClick={() => navigate('/availability/counselorpsychologist')}>Availability</Button>
                 <Button variant="dark" size="sm" onClick={() => setShowMenu(true)}>Menu</Button>
             </div>
 
@@ -23,6 +23,7 @@ const CounselorPsychologistNavbar = () => {
                 </Offcanvas.Header>
                 <Offcanvas.Body className="d-flex flex-column gap-2">
                     <Button variant="outline-dark" onClick={() => navigate('/resource/counselorpsychologist')}>Manage Resources</Button>
+                    <Button variant="outline-dark" onClick={() => navigate('/wellness/counselorpsychologist')}>Wellness View</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/feedback/counselorpsychologist')}>Feedbacks</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/sos/counselorpsychologist')}>SOS Logs</Button>
                     <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
@@ -36,7 +37,7 @@ const CounselorPsychologistNavbar = () => {
                 <Modal.Footer className="d-flex flex-column gap-2">
                     <Button className="w-50" variant="danger" onClick={() => {
                         localStorage.removeItem('token');
-                        navigate('/login/counselorpsychologist');
+                        navigate('/');
                     }}>Logout</Button>
                     <Button className="w-50" variant="secondary" onClick={() => setShowLogoutModal(false)}>
                         Cancel

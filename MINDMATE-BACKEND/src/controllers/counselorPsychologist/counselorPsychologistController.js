@@ -12,6 +12,7 @@ const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Appointment = require('../../models/Appointment');
 const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
+const Student = require('../../models/Student')
 
 // Validation regex
 const regex = {
@@ -364,6 +365,18 @@ const CounselorPsychologistController = {
         await sos.save();
 
         res.status(200).json({ message: 'SOS responded successfully' });
+    }),
+
+    // WELLNESS
+    getWellness: asyncHandler(async (req, res) => {
+        const students = await Student.find({}, {
+            AliasId: 1,
+            MoodEntries: 1,
+            HabitLogs: 1,
+            createdAt: 1
+        });
+
+        res.json(students);
     }),
 
 };

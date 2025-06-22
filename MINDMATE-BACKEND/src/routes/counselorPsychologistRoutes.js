@@ -9,7 +9,6 @@ const resourceController = require('../controllers/counselorPsychologist/resourc
 // Only counselor and psychologist can access this
 const CouncPsychoAuth = [auth, permitRoles('counselor', 'psychologist')];
 
-
 // Auth
 router.post('/signup', CounselorPsychologistController.signupCounselorPsychologist);
 router.post('/login', CounselorPsychologistController.loginCounselorPsychologist);
@@ -36,6 +35,9 @@ router.get('/feedback', CouncPsychoAuth, CounselorPsychologistController.getFeed
 // SOS logs
 router.get('/sos', CouncPsychoAuth, CounselorPsychologistController.getSOSLogs);
 router.put('/sos/respond/:logId', CouncPsychoAuth, CounselorPsychologistController.respondSOS);
+
+// Wellness
+router.get('/wellness', CouncPsychoAuth, CounselorPsychologistController.getWellness);
 
 // Resource management
 router.post('/resources', CouncPsychoAuth, resourceController.createResource);
