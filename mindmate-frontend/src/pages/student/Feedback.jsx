@@ -6,7 +6,6 @@ import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
-import { useNavigate } from 'react-router-dom';
 import CustomTable from '../../components/CustomTable'
 import GoHomeButton from '../../components/GoHomeButton';
 
@@ -16,7 +15,6 @@ const Feedback = () => {
     const [editingFeedback, setEditingFeedback] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [appointments, setAppointments] = useState([]);
-    const navigate = useNavigate();
 
     const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
@@ -37,7 +35,6 @@ const Feedback = () => {
         const fetchAppointments = async () => {
             try {
                 const res = await axios.get(`${BASE_URL}/appointments`, authHeader());
-                console.log('Fetched Appointments:', res.data);
 
                 setAppointments(res.data);
             } catch (err) {
@@ -56,7 +53,7 @@ const Feedback = () => {
         CounselorPsychologistId: Yup.string().when('Type', {
             is: 'session',
             then: (schema) => schema.required('Please select a session'),
-            otherwise: (schema) => schema.notRequired(), // ✅ FIXED
+            otherwise: (schema) => schema.notRequired(), //  Fixed
         }),
         Rating: Yup.number()
             .required('Rating is required')
@@ -81,7 +78,6 @@ const Feedback = () => {
     };
 
     const handleUpdate = async (values, { resetForm }) => {
-        console.log('Updating feedback with:', values);
 
         try {
             await axios.put(`${BASE_URL}/feedbacks/${editingFeedback._id}`, values, authHeader());
@@ -117,7 +113,7 @@ const Feedback = () => {
         >
             <GoHomeButton />
 
-            <h2 className="mb-4 text-center">Submit Feedback</h2>
+            <h3 className="text-center">Submit Feedback</h3>
             <Formik
                 initialValues={{
                     CounselorPsychologistId: '',
@@ -132,34 +128,40 @@ const Feedback = () => {
             >
                 {({ isSubmitting, values, setFieldValue }) => (
                     <FormikForm className="mb-4">
-                        <Form.Group className="mb-2">
-                            <Form.Label>Rating (1-5)</Form.Label>
-                            <Field name="Rating" type="number" className="form-control" />
-                            <ErrorMessage name="Rating" component="div" className="text-danger" />
-                        </Form.Group>
+                        <div className="row">
+                            <div className="col-md-6 mb-2">
+                                <Form.Group>
+                                    <Form.Label>Rating (1-5)</Form.Label>
+                                    <Field name="Rating" type="number" className="form-control" />
+                                    <ErrorMessage name="Rating" component="div" className="text-danger" />
+                                </Form.Group>
+                            </div>
 
-                        <Form.Group className="mb-2">
-                            <Form.Label>Type</Form.Label>
-                            <Field
-                                name="Type"
-                                as="select"
-                                className="form-control"
-                                onChange={(e) => {
-                                    const selected = e.target.value;
-                                    setFieldValue("Type", selected);
-                                    if (selected !== "session") {
-                                        setFieldValue("CounselorPsychologistId", ""); // Clear session if not type session
-                                    }
-                                }}
-                            >
-                                <option value="">Select</option>
-                                <option value="session">Session</option>
-                                <option value="platform">Platform</option>
-                                <option value="content">Content</option>
-                                <option value="SOS">SOS</option>
-                            </Field>
-                            <ErrorMessage name="Type" component="div" className="text-danger" />
-                        </Form.Group>
+                            <div className="col-md-6 mb-2">
+                                <Form.Group>
+                                    <Form.Label>Type</Form.Label>
+                                    <Field
+                                        name="Type"
+                                        as="select"
+                                        className="form-control"
+                                        onChange={(e) => {
+                                            const selected = e.target.value;
+                                            setFieldValue("Type", selected);
+                                            if (selected !== "session") {
+                                                setFieldValue("CounselorPsychologistId", ""); // Clear session if not type session
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="session">Session</option>
+                                        <option value="platform">Platform</option>
+                                        <option value="content">Content</option>
+                                        <option value="SOS">SOS</option>
+                                    </Field>
+                                    <ErrorMessage name="Type" component="div" className="text-danger" />
+                                </Form.Group>
+                            </div>
+                        </div>
 
                         <Form.Group className="mb-2">
                             <Form.Label>Select Session (Counselor/Psychologist)</Form.Label>
@@ -170,16 +172,28 @@ const Feedback = () => {
                                 disabled={values.Type !== 'session'} // Conditionally disable here
                             >
                                 <option value="">Select a session</option>
-                                {appointments.map((app) => (
-                                    <option
-                                        key={app._id}
-                                        value={app.CounselorPsychologistId?._id || ''}
-                                    >
-                                        {app.CounselorPsychologistId?.FullName || 'Unknown'} –{" "}
-                                        {new Date(app.SlotDate).toLocaleDateString()} ({app.SlotStartTime} -{" "}
-                                        {app.SlotEndTime})
-                                    </option>
-                                ))}
+                                {appointments.map((app) => {
+                                    const sessionEnd = new Date(`${app.SlotDate} ${app.SlotEndTime}`);
+                                    const isPast = sessionEnd < new Date();
+
+                                    const label = isPast
+                                        ? 'Completed'
+                                        : app.Status === 'cancelled'
+                                            ? 'Cancelled'
+                                            : 'Awaiting';
+
+                                    return (
+                                        <option
+                                            key={app._id}
+                                            value={isPast ? app.CounselorPsychologistId?._id : ''}
+                                            disabled={!isPast}
+                                        >
+                                            {app.CounselorPsychologistId?.FullName || 'Unknown'} –{" "}
+                                            {new Date(app.SlotDate).toLocaleDateString()} ({app.SlotStartTime} -{" "}
+                                            {app.SlotEndTime}) [{label}]
+                                        </option>
+                                    );
+                                })}
                             </Field>
                             <ErrorMessage
                                 name="CounselorPsychologistId"
@@ -199,7 +213,7 @@ const Feedback = () => {
                 )}
             </Formik>
 
-            <h4 className="text-center">My Feedbacks</h4>
+            <h5 className="text-center">My Feedbacks</h5>
             {loading ? (
                 <Spinner animation="border" />
             ) : (
@@ -210,14 +224,14 @@ const Feedback = () => {
                             accessor: (item) =>
                                 item.Type === 'session'
                                     ? item.CounselorPsychologistId?.FullName || 'No counselor name'
-                                    : 'Not applicable',
+                                    : '-',
                         },
                         {
                             header: 'Date',
                             accessor: (item) =>
                                 item.Type === 'session' && item.AppointmentId?.SlotDate
                                     ? new Date(item.AppointmentId.SlotDate).toLocaleDateString()
-                                    : 'Not applicable',
+                                    : '-',
                         },
                         { header: 'Rating', accessor: 'Rating' },
                         { header: 'Type', accessor: 'Type' },

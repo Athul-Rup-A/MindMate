@@ -11,7 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import GoHomeButton from '../../components/GoHomeButton';
 
 const Profile = () => {
-  const [profile, setProfile] = useState({ AliasId: '', Phone: '' });
+  const [profile, setProfile] = useState({ AliasId: '', Phone: '', Email: '' });
   const [loading, setLoading] = useState(true);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -26,6 +26,7 @@ const Profile = () => {
         setProfile({
           AliasId: res.data.AliasId || '',
           Phone: res.data.Phone || '',
+          Email: res.data.Email || '',
         });
       } catch (err) {
         toast.error('Failed to fetch profile');
@@ -39,6 +40,7 @@ const Profile = () => {
 
   const profileSchema = Yup.object().shape({
     Phone: Yup.string().matches(/^\d{10}$/, 'Phone must be 10 digits').required('Required'),
+    Email: Yup.string().email('Invalid email format').required('Email is required'),
   });
 
   const passwordSchema = Yup.object().shape({
@@ -51,8 +53,6 @@ const Profile = () => {
       ),
   });
 
-  const goHome = () => navigate('/home');
-
   return (
     <Container
       className="py-5"
@@ -63,24 +63,24 @@ const Profile = () => {
       {/* Top Right Home Button */}
       <GoHomeButton />
 
-      <Row className="g-4">
+      <Row className="g-4 align-items-stretch">
         {/* Profile Edit */}
-        <Col md={6}>
-          <Card className="p-4 shadow rounded-4">
+        <Col md={6} className="d-flex flex-column">
+          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between">
             <h4 className="mb-3 fw-bold text-center">My Profile</h4>
             <Formik
-              initialValues={{ Phone: profile.Phone }}
+              initialValues={{ Phone: profile.Phone, Email: profile.Email }}
               enableReinitialize
               validationSchema={profileSchema}
               onSubmit={async (values) => {
-                if (values.Phone === profile.Phone) {
+                if (values.Phone === profile.Phone || values.Email === profile.Email) {
                   toast.info('No changes made');
                   return;
                 }
                 try {
                   await axios.put(`${BASE_URL}/profile`, values, authHeader());
                   toast.success('Profile updated successfully');
-                  setProfile((prev) => ({ ...prev, Phone: values.Phone }));
+                  setProfile((prev) => ({ ...prev, Phone: values.Phone, Email: values.Email }));
                 } catch (err) {
                   toast.error('Error updating profile, try a new one');
                 }
@@ -99,6 +99,13 @@ const Profile = () => {
                       <ErrorMessage name="Phone" />
                     </div>
                   </div>
+                  <div className="mb-3">
+                    <label className="form-label">Email</label>
+                    <Field name="Email" className="form-control" />
+                    <div className="text-danger small">
+                      <ErrorMessage name="Email" />
+                    </div>
+                  </div>
                   <Button type="submit" variant="primary" disabled={isSubmitting} className="w-100">
                     Save Changes
                   </Button>
@@ -109,8 +116,8 @@ const Profile = () => {
         </Col>
 
         {/* Password Change */}
-        <Col md={6}>
-          <Card className="p-4 shadow rounded-4">
+        <Col md={6} className="d-flex flex-column">
+          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between">
             <h4 className="mb-3 fw-bold text-center">Change Password</h4>
             <Formik
               initialValues={{ currentPassword: '', newPassword: '' }}
@@ -127,7 +134,7 @@ const Profile = () => {
             >
               {({ isSubmitting }) => (
                 <Form>
-                  <div className="mb-3">
+                  <div className="mb-5">
                     <label className="form-label">Current Password</label>
                     <div className="input-group">
                       <Field
@@ -144,7 +151,7 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  <div className="mb-3">
+                  <div className="mb-5">
                     <label className="form-label">New Password</label>
                     <div className="input-group">
                       <Field

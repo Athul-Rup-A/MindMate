@@ -25,7 +25,7 @@ const StudentNavbar = () => {
                     <Button variant="outline-dark" onClick={() => navigate('/wellness')}>Wellness</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/resource')}>Resource</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/feedback')}>Feedback</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/report')}>Report</Button>
+                    <Button variant="outline-dark" onClick={() => navigate('/report')}>Reporting</Button>
                     <Button variant="outline-dark" onClick={() => navigate('/sos')}>SOS</Button>
                     <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
                 </Offcanvas.Body>
@@ -38,7 +38,11 @@ const StudentNavbar = () => {
                 <Modal.Footer className="d-flex flex-column gap-2">
                     <Button className="w-50" variant="danger" onClick={() => {
                         localStorage.removeItem('token');
-                        navigate('/login');
+                        navigate('/', { replace: true });
+                        window.history.pushState(null, '', window.location.href);
+                        window.onpopstate = () => {
+                            window.history.pushState(null, '', window.location.href);
+                        };
                     }}>Logout</Button>
                     <Button className="w-50" variant="secondary" onClick={() => setShowLogoutModal(false)}>
                         Cancel
