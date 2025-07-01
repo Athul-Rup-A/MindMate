@@ -312,6 +312,12 @@ const AdminController = {
     res.status(200).json({ message: 'Feedback deleted' });
   }),
 
+  // FEEDBACK-VIEW
+  getAllFeedbacks: asyncHandler(async (req, res) => {
+    const feedbacks = await Feedback.find().populate('StudentId', 'AliasId');
+    res.status(200).json(feedbacks);
+  }),
+
 };
 
 module.exports = AdminController;
