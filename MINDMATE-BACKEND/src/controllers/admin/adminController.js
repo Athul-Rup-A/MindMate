@@ -196,6 +196,60 @@ const AdminController = {
     res.status(200).json({ message: 'Password updated successfully' });
   }),
 
+  // PROFILE
+  getProfile: asyncHandler(async (req, res) => {
+    const user = await Admin.findById(req.user._id).select('-PasswordHash -tempPasswordHash');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.status(200).json(user);
+  }),
+
+  updateProfile: asyncHandler(async (req, res) => {
+    const allowed = ['Phone', 'Email'];
+    const updates = req.body;
+
+    const isValid = Object.keys(updates).every(field => allowed.includes(field));
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid update fields' });
+    };
+    if (updates.Phone && !regex.phone.test(updates.Phone)) {
+      return res.status(400).json({ message: 'Phone must be a valid phone number' });
+    };
+    if (updates.Email && !regex.email.test(updates.Email)) {
+      return res.status(400).json({ message: 'Email format is invalid' });
+    };
+
+    const updated = await Admin.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-PasswordHash');
+    res.status(200).json(updated);
+  }),
+
+  changePassword: asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Both current and new passwords are required' });
+    };
+
+    const user = await Admin.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
+    if (!isMatch) return res.status(401).json({ message: 'Current password incorrect' });
+
+    if (!regex.password.test(newPassword)) {
+      return res.status(400).json({
+        message: 'New password must be at least 10 characters long and include at least one letter and one number',
+      });
+    };
+
+    const isSame = await bcrypt.compare(newPassword, user.PasswordHash);
+    if (isSame) return res.status(400).json({ message: 'New password must differ from old' });
+
+    user.PasswordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.status(200).json({ message: 'Password changed successfully' });
+  }),
+
 };
 
 module.exports = AdminController;
