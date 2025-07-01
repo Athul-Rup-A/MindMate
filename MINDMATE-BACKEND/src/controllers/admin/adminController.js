@@ -283,6 +283,35 @@ const AdminController = {
     res.status(200).json({ message: 'Report resolved', report });
   }),
 
+  // CONTENT MODERATION
+  deleteVentPost: asyncHandler(async (req, res) => {
+    const deleted = await Vent.findByIdAndDelete(req.params.ventId);
+    if (!deleted) return res.status(404).json({ message: 'Vent not found' });
+
+    res.status(200).json({ message: 'Vent deleted' });
+  }),
+
+  deleteCounselorPsychologistAccount: asyncHandler(async (req, res) => {
+    const deleted = await CounselorPsychologist.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ message: 'Account deleted' });
+  }),
+
+  deleteResource: asyncHandler(async (req, res) => {
+    const deleted = await Resource.findByIdAndDelete(req.params.resourceId);
+    if (!deleted) return res.status(404).json({ message: 'Resource not found' });
+
+    res.status(200).json({ message: 'Resource deleted' });
+  }),
+
+  deleteFeedback: asyncHandler(async (req, res) => {
+    const deleted = await Feedback.findByIdAndDelete(req.params.feedbackId);
+    if (!deleted) return res.status(404).json({ message: 'Feedback not found' });
+
+    res.status(200).json({ message: 'Feedback deleted' });
+  }),
+
 };
 
 module.exports = AdminController;
