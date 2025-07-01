@@ -425,6 +425,17 @@ const AdminController = {
     res.status(200).json({ message: 'Admin deleted' });
   }),
 
+  // STAT
+  getDashboardStats: asyncHandler(async (req, res) => {
+    const totalAdmins = await Admin.countDocuments();
+    const totalCouncPsych = await CounselorPsychologist.countDocuments();
+    const totalStudents = await Student.countDocuments();
+    const totalReports = await Report.countDocuments();
+    const totalVents = await Vent.countDocuments();
+
+    res.status(200).json({ totalAdmins, totalCouncPsych, totalStudents, totalReports, totalVents });
+  }),
+
 };
 
 module.exports = AdminController;
