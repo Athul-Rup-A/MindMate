@@ -250,6 +250,26 @@ const AdminController = {
     res.status(200).json({ message: 'Password changed successfully' });
   }),
 
+  // APPROVAL
+  getPendingApprovals: asyncHandler(async (req, res) => {
+    const pending = await CounselorPsychologist.find({ ApprovedByAdmin: false });
+    res.status(200).json(pending);
+  }),
+
+  approveCounselorPsychologist: asyncHandler(async (req, res) => {
+    const user = await CounselorPsychologist.findByIdAndUpdate(req.params.id, { ApprovedByAdmin: true, Status: 'active' }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ message: 'Counselor/Psychologist approved', user });
+  }),
+
+  rejectCounselorPsychologist: asyncHandler(async (req, res) => {
+    const user = await CounselorPsychologist.findByIdAndUpdate(req.params.id, { Status: 'rejected' }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ message: 'Counselor/Psychologist rejected' });
+  }),
+
 };
 
 module.exports = AdminController;
