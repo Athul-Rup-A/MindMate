@@ -318,6 +318,113 @@ const AdminController = {
     res.status(200).json(feedbacks);
   }),
 
+  // ADMIN/MODERATOR MGMT
+  getAllAdmins: asyncHandler(async (req, res) => {
+    const admins = await Admin.find();
+    res.status(200).json(admins);
+  }),
+
+  createAdmin: asyncHandler(async (req, res) => {
+    const { AliasId, role, email, phone } = req.body;
+
+    if (!AliasId || !role || !email || !phone)
+      return res.status(400).json({ message: 'All fields (AliasId, Role, Email, Phone) are required' });
+
+    if (!regex.aliasId.test(AliasId))
+      return res.status(400).json({ message: 'Invalid Alias ID format' });
+
+    if (!regex.email.test(email))
+      return res.status(400).json({ message: 'Invalid email format' });
+
+    if (!regex.phone.test(phone))
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
+
+    if (!['admin', 'moderator'].includes(role))
+      return res.status(400).json({ message: 'Role must be either admin or moderator' });
+
+    const exists = await Admin.findOne({ AliasId });
+    if (exists)
+      return res.status(409).json({ message: 'Alias ID already exists' });
+
+    const tempPassword = Math.random().toString(36).slice(-6);
+    const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
+
+    const newAdmin = await Admin.create({
+      AliasId,
+      Role: role,
+      Email: email,
+      Phone: phone,
+      tempPasswordHash: hashedTempPassword,
+      isTempPassword: true,
+      tempPasswordExpires: Date.now() + 5 * 60 * 1000,
+    });
+
+    await sendEmail({
+      to: email,
+      subject: 'MindMate Admin Credentials',
+      html: `
+            <p>Hello <strong>${AliasId}</strong>,</p>
+            <p>You have been added as an <strong>${role}</strong> to the MindMate platform.</p>
+            <p><strong>Alias ID:</strong> ${AliasId}</p>
+            <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+            <p>This password will expire in 5 minutes and must be changed on first login.</p>
+            <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:3000'}/admin/login">MindMate Admin Portal</a></p>
+            <br/>
+            <p>Regards,<br>MindMate Team</p>
+        `
+    });
+
+    res.status(201).json({ message: 'Admin/Moderator created and credentials sent', admin: newAdmin });
+  }),
+
+  resendTempPassword: asyncHandler(async (req, res) => {
+    const admin = await Admin.findById(req.params.adminId);
+    if (!admin) return res.status(404).json({ message: 'Admin/Moderator not found' });
+
+    const newTempPassword = Math.random().toString(36).slice(-6);
+    const hashedTempPassword = await bcrypt.hash(newTempPassword, 10);
+
+    // Update admin with new temp password and expiry
+    admin.tempPasswordHash = hashedTempPassword;
+    admin.isTempPassword = true;
+    admin.tempPasswordExpires = Date.now() + 5 * 60 * 1000;
+    await admin.save();
+
+    sendSMS(admin.Phone, `Your new temporary password is: ${newTempPassword}. It expires in 5 minutes.`);
+    if (admin.Email) {
+      await sendEmail({
+        to: admin.Email,
+        subject: 'MindMate - Temporary Password Regenerated',
+        html: `
+        <p>Hello <strong>${admin.AliasId}</strong>,</p>
+        <p>Your new temporary password is: <strong>${newTempPassword}</strong></p>
+        <p>This password will expire in 5 minutes and must be changed on your first login.</p>
+        <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:3000'}/admin/login">MindMate Admin Portal</a></p>
+        <br/>
+        <p>Regards,<br/>MindMate Team</p>
+      `
+      });
+    }
+
+    res.status(200).json({ message: 'New temporary password generated and sent to email and phone.' });
+  }),
+
+  updatePermissions: asyncHandler(async (req, res) => {
+    const { Permissions } = req.body;
+
+    const admin = await Admin.findByIdAndUpdate(req.params.adminId, { Permissions }, { new: true });
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    res.status(200).json({ message: 'Permissions updated', admin });
+  }),
+
+  deleteAdmin: asyncHandler(async (req, res) => {
+    const deleted = await Admin.findByIdAndDelete(req.params.adminId);
+    if (!deleted) return res.status(404).json({ message: 'Admin not found' });
+
+    res.status(200).json({ message: 'Admin deleted' });
+  }),
+
 };
 
 module.exports = AdminController;
