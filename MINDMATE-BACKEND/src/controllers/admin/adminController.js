@@ -270,6 +270,19 @@ const AdminController = {
     res.status(200).json({ message: 'Counselor/Psychologist rejected' });
   }),
 
+  // REPORT MODERATION
+  getAllReports: asyncHandler(async (req, res) => {
+    const reports = await Report.find().populate('ReporterId', 'AliasId');
+    res.status(200).json(reports);
+  }),
+
+  resolveReport: asyncHandler(async (req, res) => {
+    const report = await Report.findByIdAndUpdate(req.params.reportId, { Status: 'resolved' }, { new: true });
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    res.status(200).json({ message: 'Report resolved', report });
+  }),
+
 };
 
 module.exports = AdminController;
