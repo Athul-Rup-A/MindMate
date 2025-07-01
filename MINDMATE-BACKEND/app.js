@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 // Route Mapping
 app.use('/api/students', studentRoutes);
 app.use('/api/counselorPsychologist', counselorPsychologistRoutes);
-// app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error Middleware
 const errorHandler = require('./src/middlewares/errorMiddleware');
