@@ -32,7 +32,7 @@ const studentController = {
       return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
     }
     // Password strength: at least 8 characters, with at least 1 letter and 1 number
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
       return res.status(400).json({
         message: 'Password must be at least 8 characters long and contain at least one letter and one number',
       });
@@ -42,7 +42,7 @@ const studentController = {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
     }
     // Email validation
-    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(req.body.email)) {
+    if (!/^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(req.body.email)) {
       return res.status(400).json({ message: 'Invalid email format' });
     }
     const existingStudent = await Student.findOne({ AliasId });
@@ -180,7 +180,7 @@ const studentController = {
       return res.status(400).json({ message: 'User ID and new password required' });
     }
 
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
       return res.status(400).json({
         message: 'Password must be at least 8 characters long and contain at least one letter and one number',
       });
@@ -226,7 +226,7 @@ const studentController = {
     }
 
     const profileObj = profile.toObject();
-    const appointments = await Appointment.find({ StudentId: req.user._id }).select('-__v');
+    const appointments = await Appointment.find({ StudentId: req.user.id }).select('-_v');
     res.status(200).json({
       ...profileObj,
       Appointments: appointments,
@@ -251,7 +251,7 @@ const studentController = {
     }
 
     // Password strength for new password
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
       return res.status(400).json({
         message: 'New password must be at least 8 characters long and include at least one letter and one number',
       });
@@ -328,6 +328,19 @@ const studentController = {
       return res.status(400).json({ message: 'Start time must be before end time' });
     }
 
+    // Prevent double booking by same student for same time with same counselor
+    const existingAppointment = await Appointment.findOne({
+      StudentId: req.user._id,
+      CounselorPsychologistId,
+      SlotDate: dateObj,
+      SlotStartTime,
+      Status: { $in: ['pending', 'confirmed'] },
+    });
+
+    if (existingAppointment) {
+      return res.status(400).json({ message: 'You already have an appointment at this time with this counselor.' });
+    };
+
     const appointment = await Appointment.create({
       CounselorPsychologistId,
       SlotDate: dateObj,
@@ -336,14 +349,14 @@ const studentController = {
       StudentId: req.user._id,
       ReminderSent: false,
       Status: 'pending',
-      CreatedAt: new Date(),
     });
+
     res.status(201).json(appointment);
   }),
 
   getMyAppointments: asyncHandler(async (req, res) => {
     const appointments = await Appointment.find({ StudentId: req.user._id })
-      .populate('CounselorPsychologistId', 'FullName')
+      .populate('CounselorPsychologistId', 'FullName Role')
       .sort({ SlotDate: -1 });
 
     if (!appointments) {
@@ -595,6 +608,23 @@ const studentController = {
       }
 
       resolvedAppointmentId = recentAppointment._id;
+    };
+
+    // Validate session is over
+    if (Type === 'session') {
+      if (!resolvedAppointmentId) {
+        return res.status(400).json({ message: 'Missing appointment reference for session feedback' });
+      }
+
+      const appointment = await Appointment.findById(resolvedAppointmentId);
+      if (!appointment) {
+        return res.status(404).json({ message: 'Appointment not found' });
+      }
+
+      const endTime = new Date(`${appointment.SlotDate} ${appointment.SlotEndTime}`);
+      if (endTime > new Date()) {
+        return res.status(400).json({ message: 'Feedback can only be submitted after the session is completed' });
+      }
     };
 
     const feedback = await Feedback.create({

@@ -6,18 +6,16 @@ import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import authHeader from '../../config/authHeader';
-import { useNavigate } from 'react-router-dom';
 import CustomTable from '../../components/CustomTable';
 import GoHomeButton from '../../components/GoHomeButton';
+import Select from 'react-select';
 
 const SOS = () => {
     const [sosLogs, setSosLogs] = useState([]);
     const [counselorPsychologists, setCounselorPsychologists] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [confirmData, setConfirmData] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
-    const navigate = useNavigate();
 
     const BASE_URL =
         import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
@@ -99,10 +97,6 @@ const SOS = () => {
         }
     };
 
-    const filteredCounselors = counselorPsychologists.filter((c) =>
-        c.FullName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
         <Container
             fluid
@@ -118,7 +112,7 @@ const SOS = () => {
 
             <GoHomeButton />
 
-            <h2 className="text-center mb-4">Trigger SOS</h2>
+            <h3 className="text-center mb-4">Trigger SOS</h3>
 
             <Formik
                 initialValues={{ AlertedTo: '', Method: '' }}
@@ -128,24 +122,27 @@ const SOS = () => {
                 {({ isSubmitting }) => (
                     <FormikForm className="mb-4">
                         <Form.Group className="mb-3">
-                            <Form.Label>Search Counselor/Psychologist</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Type name to search"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
                             <Form.Label>Select Counselor/Psychologist</Form.Label>
-                            <Field name="AlertedTo" as="select" className="form-control">
-                                <option value="">-- Select --</option>
-                                {filteredCounselors.map((counselorPsychologist) => (
-                                    <option key={counselorPsychologist._id} value={counselorPsychologist._id}>
-                                        {counselorPsychologist.FullName} ({counselorPsychologist.Specialization})
-                                    </option>
-                                ))}
+                            <Field name="AlertedTo">
+                                {({ field, form }) => (
+                                    <Select
+                                        options={counselorPsychologists.map((coun) => ({
+                                            label: `${coun.FullName} (${coun.Specialization})`,
+                                            value: coun._id,
+                                        }))}
+                                        value={
+                                            counselorPsychologists
+                                                .map((coun) => ({
+                                                    label: `${coun.FullName} (${coun.Specialization})`,
+                                                    value: coun._id,
+                                                }))
+                                                .find((option) => option.value === field.value) || null
+                                        }
+                                        onChange={(option) => form.setFieldValue('AlertedTo', option?.value || '')}
+                                        placeholder="Search and select..."
+                                        isClearable
+                                    />
+                                )}
                             </Field>
                             <ErrorMessage name="AlertedTo" component="div" className="text-danger" />
                         </Form.Group>
@@ -187,7 +184,7 @@ const SOS = () => {
                 </Modal.Footer>
             </Modal>
 
-            <h4 className="mt-5 text-center">My SOS Logs</h4>
+            <h5 className="mt-5 text-center">My SOS Logs</h5>
 
             {loading ? (
                 <div className="text-center">
@@ -208,7 +205,11 @@ const SOS = () => {
                             header: 'Alerted To',
                             accessor: (log) =>
                                 log.AlertedTo.length > 0
-                                    ? log.AlertedTo.map((id) => <div key={id}>{id}</div>)
+                                    ? log.AlertedTo
+                                        .map((id) => {
+                                            const counselor = counselorPsychologists.find((coun) => coun._id === id);
+                                            return <div key={id}>{counselor?.FullName || 'Unknown'}</div>;
+                                        })
                                     : 'None',
                         },
                     ]}
