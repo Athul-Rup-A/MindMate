@@ -26,6 +26,15 @@ const FormField = ({ label, name, type = 'text', placeholder, icon, ...props }) 
                         variant="outline-secondary"
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        className='border'
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minWidth: '48px',
+                            height: '38px',
+                            padding: '0',
+                        }}
                     >
                         {showPassword ? <EyeSlashFill /> : <EyeFill />}
                     </Button>

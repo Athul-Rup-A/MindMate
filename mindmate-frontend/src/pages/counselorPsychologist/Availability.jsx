@@ -3,7 +3,7 @@ import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
 import CouncPsychHome from '../../components/CouncPsychHome'
 import { toast } from 'react-toastify';
-import { Container, Card, Spinner, Button, Row, Col, Form } from 'react-bootstrap';
+import { Container, Card, Spinner, Button, Row, Col, Form, Badge } from 'react-bootstrap';
 
 const hours = Array.from({ length: 24 }, (_, i) => {
     const start = i.toString().padStart(2, '0') + ':00';
@@ -152,22 +152,40 @@ const Availability = () => {
                         {selectedDay && (
                             <>
                                 <h6 className="mt-2 mb-2">Select Time Slots</h6>
+
+                                {/* 🟡 Color Legend */}
+                                <div className="mb-2 d-flex gap-3">
+                                    <Badge bg="outline-danger" text="dark">Available</Badge>
+                                    <Badge bg="success">Selected</Badge>
+                                    <Badge bg="warning" text="dark">Already Saved</Badge>
+                                </div>
+
                                 <div className="d-flex flex-wrap gap-2 mb-3">
                                     {hours.map((hour, idx) => {
-                                        const selected = selectedTimes.find(
-                                            (t) => t.StartTime === hour.StartTime && t.EndTime === hour.EndTime
-                                        ) || slots.find(
+                                        const isAlreadySaved = slots.some(
                                             (t) =>
                                                 t.Day === selectedDay &&
                                                 t.StartTime === hour.StartTime &&
                                                 t.EndTime === hour.EndTime
                                         );
+
+                                        const isSelectedNow = selectedTimes.some(
+                                            (t) => t.StartTime === hour.StartTime && t.EndTime === hour.EndTime
+                                        );
+
+                                        const variant = isAlreadySaved
+                                            ? 'warning'
+                                            : isSelectedNow
+                                                ? 'success'
+                                                : 'outline-danger';
+
                                         return (
                                             <Button
                                                 key={idx}
                                                 size="sm"
-                                                variant={selected ? 'success' : 'outline-danger'}
-                                                onClick={() => handleToggleTime(hour)}
+                                                variant={variant}
+                                                disabled={isAlreadySaved}
+                                                onClick={() => !isAlreadySaved && handleToggleTime(hour)}
                                             >
                                                 {hour.label}
                                             </Button>

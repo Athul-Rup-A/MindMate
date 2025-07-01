@@ -3,16 +3,16 @@ const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
-const sendEmail = require('../../utils/autoEmail')
-const sendSMS = (phone, message) => {
-    console.log(`Sending SMS to ${phone}: ${message}`);
-};
-
 const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Appointment = require('../../models/Appointment');
 const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
 const Student = require('../../models/Student')
+
+const sendEmail = require('../../utils/autoEmail')
+const sendSMS = (phone, message) => {
+    console.log(`Sending SMS to ${phone}: ${message}`);
+};
 
 // Validation regex
 const regex = {
@@ -330,12 +330,19 @@ const CounselorPsychologistController = {
 
     // FEEDBACKS
     getFeedbacks: asyncHandler(async (req, res) => {
+        const counselorPsychologistId = req.user._id;
+
         const feedbacks = await Feedback.find({ StudentId: { $exists: true }, Type: 'session' })
             .populate('StudentId', 'AliasId')
-            .populate('AppointmentId')
+            .populate({
+                path: 'AppointmentId',
+                match: { CounselorPsychologistId: counselorPsychologistId },
+            })
             .sort({ CreatedAt: -1 });
 
-        res.status(200).json(feedbacks);
+        const filtered = feedbacks.filter(fb => fb.AppointmentId !== null);
+
+        res.status(200).json(filtered);
     }),
 
     // SOS LOGS
@@ -369,12 +376,20 @@ const CounselorPsychologistController = {
 
     // WELLNESS
     getWellness: asyncHandler(async (req, res) => {
-        const students = await Student.find({}, {
-            AliasId: 1,
-            MoodEntries: 1,
-            HabitLogs: 1,
-            createdAt: 1
-        });
+        const counselorPsychologistId = req.user._id;
+
+        const appointments = await Appointment.find({ CounselorPsychologistId: counselorPsychologistId }, 'StudentId');
+
+        const studentIds = [...new Set(appointments.map(app => app.StudentId.toString()))];
+
+        const students = await Student.find(
+            { _id: { $in: studentIds } },
+            {
+                AliasId: 1,
+                MoodEntries: 1,
+                HabitLogs: 1,
+                createdAt: 1
+            });
 
         res.json(students);
     }),

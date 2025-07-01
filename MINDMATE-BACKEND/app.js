@@ -1,7 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-require('dotenv').config();
+
+// Routes
+const studentRoutes = require('./src/routes/studentRoutes');
+const counselorPsychologistRoutes = require('./src/routes/counselorPsychologistRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 const app = express();
 
@@ -14,11 +19,6 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
-
-// Routes
-const studentRoutes = require('./src/routes/studentRoutes');
-const counselorPsychologistRoutes = require('./src/routes/counselorPsychologistRoutes');
-const adminRoutes = require('./src/routes/adminRoutes');
 
 // Route Mapping
 app.use('/api/students', studentRoutes);

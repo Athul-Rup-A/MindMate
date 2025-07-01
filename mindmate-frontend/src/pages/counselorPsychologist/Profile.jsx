@@ -46,7 +46,11 @@ const Profile = () => {
     }, []);
 
     const handleProfileUpdate = async (values, { setSubmitting, resetForm, dirty }) => {
-        if (!dirty) {
+        const isSame = (a, b) =>
+            ['FullName', 'Phone', 'Email', 'Credentials', 'Specialization']
+                .every((key) => a[key] === b[key]);
+
+        if (isSame(values, profile)) {
             toast.info('No changes made');
             setSubmitting(false);
             return;
@@ -97,9 +101,9 @@ const Profile = () => {
 
                 <CouncPsychHome />
 
-                <Row className="g-4">
-                    <Col md={6}>
-                        <Card className="p-4 shadow-lg rounded-4 h-100">
+                <Row className="g-4 align-items-stretch">
+                    <Col md={6} className="d-flex flex-column">
+                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
                             <h4 className="fw-bold text-primary text-center mb-3">Your Profile</h4>
                             <Formik
                                 initialValues={{
@@ -108,8 +112,6 @@ const Profile = () => {
                                     Email: profile?.Email || '',
                                     Credentials: profile?.Credentials || '',
                                     Specialization: profile?.Specialization || '',
-                                    AliasId: profile?.AliasId || '',
-                                    Role: profile?.Role || '',
                                 }}
                                 validationSchema={ProfileSchema}
                                 enableReinitialize
@@ -140,8 +142,8 @@ const Profile = () => {
                         </Card>
                     </Col>
 
-                    <Col md={6}>
-                        <Card className="p-4 shadow-lg rounded-4 h-100">
+                    <Col md={6} className="d-flex flex-column">
+                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
                             <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
                             <Formik
                                 initialValues={{ currentPassword: '', newPassword: '' }}
@@ -155,12 +157,14 @@ const Profile = () => {
                                             label="Current Password"
                                             type="password"
                                             placeholder="Enter your current password"
+                                            className="mb-4"
                                         />
                                         <FormField
                                             name="newPassword"
                                             label="New Password"
                                             type="password"
                                             placeholder="Enter your new password"
+                                            className="mb-4"
                                         />
                                         <Button variant="danger" type="submit" disabled={isSubmitting} className="w-100 mt-2">
                                             {isSubmitting ? 'Changing...' : 'Change Password'}

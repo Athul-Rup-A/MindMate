@@ -44,8 +44,7 @@ const CounselorPsychologistDash = () => {
     };
 
     return (
-        <Container className="py-5">
-            <h3 className="mb-4 text-center">Available Counselors & Psychologists</h3>
+        <Container className="py-4">
             <Row className="g-4">
                 {counselorPsychologists.length > 0 ? (
                     counselorPsychologists.map((counselorPsychologist) => (
@@ -82,7 +81,16 @@ const CounselorPsychologistDash = () => {
                                     <Button
                                         variant="primary"
                                         className="mt-3"
-                                        onClick={() => navigate(`/appointments/${counselorPsychologist._id}`)}
+                                        onClick={() =>
+                                            navigate(`/appointments/${counselorPsychologist._id}`, {
+                                                state: {
+                                                    name: counselorPsychologist.FullName,
+                                                    availability: Array.isArray(counselorPsychologist.AvailabilitySlots)
+                                                        ? counselorPsychologist.AvailabilitySlots
+                                                        : [],
+                                                },
+                                            })
+                                        }
                                     >
                                         <CalendarCheckFill className="me-2" /> Book Appointment
                                     </Button>
