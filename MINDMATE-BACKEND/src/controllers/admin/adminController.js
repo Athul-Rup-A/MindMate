@@ -7,6 +7,7 @@ const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Feedback = require('../../models/Feedback');
 const Report = require('../../models/Report');
 const Resource = require('../../models/Resource');
+const SOS = require('../../models/SOSLog')
 const Student = require('../../models/Student')
 const Vent = require('../../models/VentWall');
 
@@ -275,7 +276,10 @@ const AdminController = {
 
   // REPORT MODERATION
   getAllReports: asyncHandler(async (req, res) => {
-    const reports = await Report.find().populate('ReporterId', 'AliasId');
+    const reports = await Report.find().populate('ReporterId', 'AliasId')
+      .populate('TargetId', 'FullName AliasId')
+      .sort({ createdAt: -1 });
+
     res.status(200).json(reports);
   }),
 
@@ -437,6 +441,44 @@ const AdminController = {
     const totalVents = await Vent.countDocuments();
 
     res.status(200).json({ totalAdmins, totalCouncPsych, totalStudents, totalReports, totalVents });
+  }),
+
+  getAllCounselorPsychologists: asyncHandler(async (req, res) => {
+    const users = await CounselorPsychologist.find()
+      .select('-PasswordHash -tempPasswordHash')
+      .sort({ createdAt: -1 });
+    res.status(200).json(users);
+  }),
+
+  getAllStudents: asyncHandler(async (req, res) => {
+    const students = await Student.find()
+      .select('-PasswordHash -tempPasswordHash')
+      .sort({ createdAt: -1 });
+    res.status(200).json(students);
+  }),
+
+  getAllVents: asyncHandler(async (req, res) => {
+    const vents = await Vent.find().populate('StudentId', 'AliasId')
+      .populate('Likes', 'AliasId')
+      .populate('Reports', 'AliasId')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(vents);
+  }),
+
+  getAllSOS: asyncHandler(async (req, res) => {
+    const sos = await SOS.find()
+      .populate({
+        path: 'StudentId',
+        select: 'AliasId FullName'
+      })
+      .populate({
+        path: 'AlertedTo',
+        select: 'FullName'
+      })
+      .sort({ TriggeredAt: -1 });
+
+    res.status(200).json(sos);
   }),
 
 };

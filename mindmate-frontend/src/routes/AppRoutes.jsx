@@ -33,6 +33,7 @@ import CounselorPsychologistWellness from '../pages/counselorPsychologist/Wellne
 // Admin pages
 import AdminSignup from '../pages/admin/Signup'
 import AdminLogin from '../pages/admin/Login'
+import AdminStat from '../pages/admin/Stat'
 
 const AppRoutes = () => (
   <BrowserRouter>
@@ -114,6 +115,11 @@ const AppRoutes = () => (
 
       <Route path="/wellness/counselorpsychologist" element={
         <ProtectedRoute><CounselorPsychologistWellness /></ProtectedRoute>
+      } />
+
+      {/* Admin Protected Routes */}
+      <Route path="/stat/admin" element={
+        <ProtectedRoute><AdminStat /></ProtectedRoute>
       } />
 
     </Routes>

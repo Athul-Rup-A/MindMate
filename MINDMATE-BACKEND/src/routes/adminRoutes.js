@@ -48,5 +48,9 @@ router.delete('/:adminId', StrictAdminAuth, AdminController.deleteAdmin);
 
 // Platform Stats
 router.get('/stats', AdminModeAuth, AdminController.getDashboardStats);
+router.get('/counselorPsychologist', AdminModeAuth, AdminController.getAllCounselorPsychologists);
+router.get('/students', AdminModeAuth, AdminController.getAllStudents);
+router.get('/vents', AdminModeAuth, AdminController.getAllVents);
+router.get('/sos', AdminModeAuth, AdminController.getAllSOS);
 
 module.exports = router;
