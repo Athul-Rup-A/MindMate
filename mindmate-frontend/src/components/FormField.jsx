@@ -26,7 +26,7 @@ const FormField = ({ label, name, type = 'text', placeholder, icon, ...props }) 
                         variant="outline-secondary"
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className='border'
+                        className='border border-dark border-opacity-25'
                         style={{
                             display: 'flex',
                             alignItems: 'center',

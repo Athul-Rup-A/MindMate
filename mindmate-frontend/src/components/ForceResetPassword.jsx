@@ -1,38 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { Container, Form, Button, Card, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { LockFill, InfoCircle } from 'react-bootstrap-icons';
+import { LockFill, InfoCircle, EyeFill, EyeSlashFill } from 'react-bootstrap-icons';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ForceResetPassword = () => {
+
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const userId = location.state?.userId;
   const role = location.state?.role || 'student';
-  const BASE_URL = import.meta.env.VITE_API_URL ||
-    (role === 'student'
-      ? 'http://localhost:5000/api/students'
-      : 'http://localhost:5000/api/counselorPsychologist');
+  const BASE_URL =
+    role === 'admin'
+      ? 'http://localhost:5000/api/admin'
+      : role === 'counselorPsychologist'
+        ? 'http://localhost:5000/api/counselorPsychologist'
+        : 'http://localhost:5000/api/students';
 
-  const ResetSchema = Yup.object().shape({
-    newPassword: Yup.string()
-      .required('Password is required')
-      .min(8, 'Password must be at least 8 characters')
-      .matches(/[A-Za-z]/, 'At least one letter required')
-      .matches(/[0-9]/, 'At least one number required'),
-    confirmPassword: Yup.string()
-      .required('Please confirm your password')
-      .oneOf([Yup.ref('newPassword')], 'Passwords must match'),
-  });
+  const minLengths = {
+    student: 6,
+    counselorPsychologist: 8,
+    admin: 10,
+  };
+  const minLength = minLengths[role] || 6;
+
+  const ResetSchema = (role) => {
+
+    return Yup.object().shape({
+      newPassword: Yup.string()
+        .required('Password is required')
+        .min(minLength, `Password must be at least ${minLength} characters`)
+        .matches(/[A-Za-z]/, 'At least one letter required')
+        .matches(/[0-9]/, 'At least one number required'),
+      confirmPassword: Yup.string()
+        .required('Please confirm your password')
+        .oneOf([Yup.ref('newPassword')], 'Passwords must match'),
+    });
+  };
 
   const handleSubmit = async (values, { setSubmitting }) => {
     if (!userId) {
       toast.error('Session expired. Please log in again.');
-      navigate(role === 'counselorPsychologist' ? '/login/counselorpsychologist' : '/login/student'); return;
+
+      const loginPath =
+        role === 'admin'
+          ? '/login/admin'
+          : role === 'counselorPsychologist'
+            ? '/login/counselorpsychologist'
+            : '/login/student';
+
+      navigate(loginPath);
+      return;
     }
 
     try {
@@ -43,7 +68,15 @@ const ForceResetPassword = () => {
 
       toast.success(res.data.message || 'Password reset successful, Please Login again!');
       setTimeout(() => {
-        navigate(role === 'counselorPsychologist' ? '/login/counselorpsychologist' : '/login/student');
+
+        const loginPath =
+          role === 'admin'
+            ? '/login/admin'
+            : role === 'counselorPsychologist'
+              ? '/login/counselorpsychologist'
+              : '/login/student';
+
+        navigate(loginPath);
       }, 4000);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to reset password');
@@ -55,7 +88,8 @@ const ForceResetPassword = () => {
   return (
     <div
       style={{
-        background: 'linear-gradient(to right, rgb(102, 142, 147), rgb(233, 227, 225))',
+        background: 'url("pngtree-pa.jpg")',
+        backgroundSize: 'cover',
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
@@ -72,7 +106,7 @@ const ForceResetPassword = () => {
 
           <Formik
             initialValues={{ newPassword: '', confirmPassword: '' }}
-            validationSchema={ResetSchema}
+            validationSchema={ResetSchema(role)}
             onSubmit={handleSubmit}
           >
             {({ isSubmitting }) => (
@@ -84,7 +118,7 @@ const ForceResetPassword = () => {
                       placement="right"
                       overlay={
                         <Tooltip>
-                          Minimum 8 characters, 1 letter & 1 number required.
+                          Minimum {minLength} characters with 1 letter and 1 number required.
                         </Tooltip>
                       }
                     >
@@ -94,11 +128,17 @@ const ForceResetPassword = () => {
                   <InputGroup>
                     <InputGroup.Text><LockFill /></InputGroup.Text>
                     <Field
-                      type="password"
+                      type={showNewPassword ? 'text' : 'password'}
                       name="newPassword"
                       as={Form.Control}
                       placeholder="Enter new password"
                     />
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => setShowNewPassword(prev => !prev)}
+                    >
+                      {showNewPassword ? <EyeSlashFill /> : <EyeFill />}
+                    </Button>
                   </InputGroup>
                   <div className="text-danger small mt-1">
                     <ErrorMessage name="newPassword" />
@@ -110,11 +150,17 @@ const ForceResetPassword = () => {
                   <InputGroup>
                     <InputGroup.Text><LockFill /></InputGroup.Text>
                     <Field
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword"
                       as={Form.Control}
                       placeholder="Confirm new password"
                     />
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => setShowConfirmPassword(prev => !prev)}
+                    >
+                      {showConfirmPassword ? <EyeSlashFill /> : <EyeFill />}
+                    </Button>
                   </InputGroup>
                   <div className="text-danger small mt-1">
                     <ErrorMessage name="confirmPassword" />

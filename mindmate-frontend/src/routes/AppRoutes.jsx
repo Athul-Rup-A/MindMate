@@ -30,6 +30,10 @@ import CounselorPsychologistSOS from '../pages/counselorPsychologist/SOS';
 import CounselorPsychologistResource from '../pages/counselorPsychologist/Resource';
 import CounselorPsychologistWellness from '../pages/counselorPsychologist/Wellness';
 
+// Admin pages
+import AdminSignup from '../pages/admin/Signup'
+import AdminLogin from '../pages/admin/Login'
+
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -46,6 +50,10 @@ const AppRoutes = () => (
       {/* Counselor&Psychologist Public Routes */}
       <Route path="/signup/counselorpsychologist" element={<CounselorPsychologistSignup />} />
       <Route path="/login/counselorpsychologist" element={<CounselorPsychologistLogin />} />
+
+      {/* Admin Public Routes */}
+      <Route path="/signup/admin" element={<AdminSignup />} />
+      <Route path="/login/admin" element={<AdminLogin />} />
 
       {/* Student Protected Routes */}
       <Route path="/profile" element={
@@ -80,7 +88,6 @@ const AppRoutes = () => (
       } />
 
       {/* Counselor&Psychologist Protected Routes */}
-
       <Route path="/profile/counselorpsychologist" element={
         <ProtectedRoute><CounselorPsychologistProfile /></ProtectedRoute>
       } />

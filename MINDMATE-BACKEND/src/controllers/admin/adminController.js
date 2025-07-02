@@ -10,6 +10,7 @@ const Resource = require('../../models/Resource');
 const Student = require('../../models/Student')
 const Vent = require('../../models/VentWall');
 
+const generateTempPassword = require('../../utils/tempPassGen')
 const sendEmail = require('../../utils/autoEmail');
 const sendSMS = (phone, message) => {
   console.log(`Sending SMS to ${phone}: ${message}`);
@@ -18,7 +19,7 @@ const sendSMS = (phone, message) => {
 const regex = {
   aliasId: /^[a-zA-Z0-9_]{4,20}$/,
   password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/,
-  phone: /^\d{10}$/,
+  phone: /^[6-9]\d{9}$/,
   email: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
 };
 
@@ -65,7 +66,9 @@ const AdminController = {
     const newAdmin = await Admin.create({
       AliasId,
       PasswordHash: hashedPassword,
-      Role: role
+      Role: role,
+      Phone: phone,
+      Email: email
     });
 
     const token = generateToken({ _id: newAdmin._id, role });
@@ -143,7 +146,7 @@ const AdminController = {
     if (!user)
       return res.status(404).json({ message: 'No account found for this phone number' });
 
-    const tempPassword = Math.random().toString(36).slice(-6);
+    const tempPassword = generateTempPassword();
     const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
 
     user.tempPasswordHash = hashedTempPassword;
