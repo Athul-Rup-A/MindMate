@@ -25,25 +25,23 @@ router.put('/change-profile-password', AdminModeAuth, AdminController.changePass
 router.get('/pending-approvals', StrictAdminAuth, AdminController.getPendingApprovals);
 router.put('/approve/:id', StrictAdminAuth, AdminController.approveCounselorPsychologist);
 router.put('/reject/:id', StrictAdminAuth, AdminController.rejectCounselorPsychologist);
+router.delete('/counselorpsychologist/:id', StrictAdminAuth, AdminController.deleteCounselorPsychologistAccount);
 
 // Report Moderation
 router.get('/reports', AdminModeAuth, AdminController.getAllReports);
 router.put('/reports/:reportId/resolve', AdminModeAuth, AdminController.resolveReport);
 
 // Content Moderation
+router.get('/resources', AdminModeAuth, AdminController.getAllResources)
+router.get('/feedbacks', AdminModeAuth, AdminController.getAllFeedbacks);
 router.delete('/vents/:ventId', AdminModeAuth, AdminController.deleteVentPost);
-router.delete('/counselorpsychologist/:id', AdminModeAuth, AdminController.deleteCounselorPsychologistAccount);
 router.delete('/resources/:resourceId', AdminModeAuth, AdminController.deleteResource);
 router.delete('/feedbacks/:feedbackId', AdminModeAuth, AdminController.deleteFeedback);
-
-// Feedback Viewing
-router.get('/feedbacks', AdminModeAuth, AdminController.getAllFeedbacks);
 
 // Admin/Moderator Management
 router.get('/users', StrictAdminAuth, AdminController.getAllAdmins);
 router.post('/create', StrictAdminAuth, AdminController.createAdmin);
 router.post('/resend-temp-password/:id', StrictAdminAuth, AdminController.resendTempPassword);
-router.put('/permissions/:adminId', StrictAdminAuth, AdminController.updatePermissions);
 router.delete('/:adminId', StrictAdminAuth, AdminController.deleteAdmin);
 
 // Platform Stats

@@ -4,6 +4,10 @@ const { Schema, model } = mongoose;
 
 const AdminSchema = new Schema({
   AliasId: { type: String, required: true, unique: true },
+  FullName: {
+    type: String,
+    required: true,
+  },
   PasswordHash: { type: String, required: true },
   isTempPassword: {
     type: Boolean,
@@ -14,10 +18,6 @@ const AdminSchema = new Schema({
     type: Date,
   },
   Role: { type: String, required: true, enum: ['admin', 'moderator'] },
-  Permissions: [{
-    type: String,
-    enum: ['approve_counselorpsychologist', 'moderate_content'],
-  }],
   Phone: {
     type: String,
     required: true,

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import axios from '../../config/axios';
 import FormField from '../../components/FormField';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Container, Form, Button, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { InfoCircle, ClipboardFill, LockFill, TelephoneFill, EnvelopeFill } from 'react-bootstrap-icons';
+import { InfoCircle, ClipboardFill, LockFill, TelephoneFill, EnvelopeFill, PersonFill } from 'react-bootstrap-icons';
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
@@ -12,6 +12,7 @@ const AdminSignupSchema = Yup.object().shape({
     AliasId: Yup.string()
         .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
         .required('Alias ID is required'),
+    FullName: Yup.string().required('Full name is required'),
     password: Yup.string()
         .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/, 'Minimum 10 characters with 1 letter and 1 number')
         .required('Password is required'),
@@ -23,6 +24,7 @@ const AdminSignupSchema = Yup.object().shape({
 });
 
 const Signup = () => {
+    const [adminExists, setAdminExists] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (values, { resetForm }) => {
@@ -33,7 +35,12 @@ const Signup = () => {
             setTimeout(() => navigate('/login/admin'), 2500);
         } catch (err) {
             const msg = err?.response?.data?.message || 'Signup failed';
-            toast.error(msg);
+
+            if (msg === 'Signup not allowed. Admin already exists.') {
+                setAdminExists(true);
+            } else {
+                toast.error(msg);
+            }
         }
     };
 
@@ -63,111 +70,136 @@ const Signup = () => {
                     <h2 className="text-center fw-bold text-dark mb-1">Admin / Moderator Signup</h2>
                     <p className="text-center text-muted mb-4">Register to manage MindMate securely🛡️</p>
 
-                    <Formik
-                        initialValues={{
-                            AliasId: '',
-                            password: '',
-                            email: '',
-                            phone: '',
-                            role: '',
-                        }}
-                        validationSchema={AdminSignupSchema}
-                        onSubmit={handleSubmit}
-                    >
-                        {({ isSubmitting }) => (
-                            <FormikForm>
-                                <Row>
-                                    <Col md={6}>
-                                        <FormField
-                                            label={
-                                                <>
-                                                    Alias ID{' '}
-                                                    <OverlayTrigger
-                                                        placement="right"
-                                                        overlay={<Tooltip>Use a nickname.<br></br> This will be your login ID</Tooltip>}
-                                                    >
-                                                        <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
-                                                    </OverlayTrigger>
-                                                </>
-                                            }
-                                            name="AliasId"
-                                            placeholder="Ex. ADM001"
-                                            icon={<ClipboardFill />}
-                                        />
+                    {adminExists ? (
+                        <div className="text-center">
+                            <h4 className="text-danger fw-bold mb-3">Admin Already Exists</h4>
+                            <p className="text-muted fs-5">
+                                This platform is already managed by an administrator.<br />
+                                Please <span className="fw-semibold">log in</span> instead.
+                            </p>
+                            <Button
+                                variant="dark"
+                                className="mt-3"
+                                onClick={() => navigate('/login/admin')}
+                            >
+                                Go to Login
+                            </Button>
+                        </div>
+                    ) : (
+                        <Formik
+                            initialValues={{
+                                AliasId: '',
+                                FullName: '',
+                                password: '',
+                                email: '',
+                                phone: '',
+                                role: '',
+                            }}
+                            validationSchema={AdminSignupSchema}
+                            onSubmit={handleSubmit}
+                        >
+                            {({ isSubmitting }) => (
+                                <FormikForm>
+                                    <Row>
+                                        <Col md={6}>
+                                            <FormField
+                                                label={
+                                                    <>
+                                                        Alias ID{' '}
+                                                        <OverlayTrigger
+                                                            placement="right"
+                                                            overlay={<Tooltip>Use a nickname.<br></br> This will be your login ID</Tooltip>}
+                                                        >
+                                                            <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
+                                                        </OverlayTrigger>
+                                                    </>
+                                                }
+                                                name="AliasId"
+                                                placeholder="Ex. ADM001"
+                                                icon={<ClipboardFill />}
+                                            />
 
-                                        <FormField
-                                            label="Email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="Enter email"
-                                            icon={<EnvelopeFill />}
-                                        />
+                                            <FormField
+                                                label="Full Name"
+                                                name="FullName"
+                                                placeholder="Enter your full name"
+                                                icon={<PersonFill />}
+                                            />
 
-                                        <FormField
-                                            label="Phone"
-                                            name="phone"
-                                            placeholder="10-digit number"
-                                            icon={<TelephoneFill />}
-                                        />
-                                    </Col>
+                                            <FormField
+                                                label="Phone"
+                                                name="phone"
+                                                placeholder="10-digit number"
+                                                icon={<TelephoneFill />}
+                                            />
+                                        </Col>
 
-                                    <Col md={6}>
-                                        <FormField
-                                            label={
-                                                <>
-                                                    Password{' '}
-                                                    <OverlayTrigger
-                                                        placement="right"
-                                                        overlay={
-                                                            <Tooltip>
-                                                                Minimum 10 characters with at least 1 letter and 1 number
-                                                            </Tooltip>
-                                                        }
-                                                    >
-                                                        <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
-                                                    </OverlayTrigger>
-                                                </>
-                                            }
-                                            name="password"
-                                            type="password"
-                                            placeholder="Create password"
-                                            icon={<LockFill />}
-                                        />
+                                        <Col md={6}>
+                                            <FormField
+                                                label={
+                                                    <>
+                                                        Password{' '}
+                                                        <OverlayTrigger
+                                                            placement="right"
+                                                            overlay={
+                                                                <Tooltip>
+                                                                    Minimum 10 characters with at least 1 letter and 1 number
+                                                                </Tooltip>
+                                                            }
+                                                        >
+                                                            <InfoCircle style={{ cursor: 'pointer', position: 'relative', top: '-1px' }} />
+                                                        </OverlayTrigger>
+                                                    </>
+                                                }
+                                                name="password"
+                                                type="password"
+                                                placeholder="Create password"
+                                                icon={<LockFill />}
+                                            />
 
-                                        <Form.Group className="mb-4">
-                                            <Form.Label>Role</Form.Label>
-                                            <Field as="select" name="role" className="form-select">
-                                                <option value="">Select Role</option>
-                                                <option value="admin">Admin</option>
-                                                <option value="moderator">Moderator</option>
-                                            </Field>
-                                            <ErrorMessage name="role" component="div" className="text-danger small mt-1" />
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
+                                            <FormField
+                                                label="Email"
+                                                name="email"
+                                                type="email"
+                                                placeholder="Enter email"
+                                                icon={<EnvelopeFill />}
+                                            />
 
-                                <Button
-                                    type="submit"
-                                    className="w-100 mt-3 fw-semibold"
-                                    variant="dark"
-                                    disabled={isSubmitting}
-                                    style={{ letterSpacing: '0.5px' }}
-                                >
-                                    {isSubmitting ? 'Signing Up...' : 'Sign Up'}
-                                </Button>
+                                            <Form.Group className="mb-4">
+                                                <Form.Label>Role</Form.Label>
+                                                <Field as="select" name="role" className="form-select">
+                                                    <option value="">Select Role</option>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="moderator">Moderator</option>
+                                                </Field>
+                                                <ErrorMessage name="role" component="div" className="text-danger small mt-1" />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
 
-                                <div className="text-center mt-3">
                                     <Button
-                                        variant="link"
-                                        className="text-decoration-none text-dark"
-                                        onClick={() => navigate('/login/admin')}
+                                        type="submit"
+                                        className="w-100 mt-3 fw-semibold"
+                                        variant="dark"
+                                        disabled={isSubmitting}
+                                        style={{ letterSpacing: '0.5px' }}
                                     >
-                                        Already have an account?
+                                        {isSubmitting ? 'Signing Up...' : 'Sign Up'}
                                     </Button>
-                                </div>
-                            </FormikForm>
-                        )}
-                    </Formik>
+
+                                    <div className="text-center mt-3">
+                                        <Button
+                                            variant="link"
+                                            className="text-decoration-none text-dark"
+                                            onClick={() => navigate('/login/admin')}
+                                        >
+                                            Already have an account?
+                                        </Button>
+                                    </div>
+                                </FormikForm>
+                            )}
+                        </Formik>
+                    )}
                 </Card>
             </Container>
         </div>

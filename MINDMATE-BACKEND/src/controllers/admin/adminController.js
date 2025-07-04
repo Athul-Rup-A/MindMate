@@ -28,9 +28,15 @@ const AdminController = {
 
   // AUTH
   signupAdmin: asyncHandler(async (req, res) => {
-    const { AliasId, password, role, phone, email } = req.body;
+    const existingAdmins = await Admin.countDocuments();
 
-    if (!AliasId || !password || !role || !phone || !email) {
+    if (existingAdmins > 0) {
+      return res.status(403).json({ message: 'Signup not allowed. Admin already exists.' });
+    };
+
+    const { AliasId, FullName, password, role, phone, email } = req.body;
+
+    if (!AliasId || !FullName || !password || !role || !phone || !email) {
       return res.status(400).json({ message: 'All fields required' });
     };
     if (!regex.aliasId.test(AliasId)) {
@@ -66,6 +72,7 @@ const AdminController = {
 
     const newAdmin = await Admin.create({
       AliasId,
+      FullName,
       PasswordHash: hashedPassword,
       Role: role,
       Phone: phone,
@@ -332,9 +339,9 @@ const AdminController = {
   }),
 
   createAdmin: asyncHandler(async (req, res) => {
-    const { AliasId, role, email, phone } = req.body;
+    const { AliasId, fullName, role, email, phone } = req.body;
 
-    if (!AliasId || !role || !email || !phone)
+    if (!AliasId || !fullName || !role || !email || !phone)
       return res.status(400).json({ message: 'All fields (AliasId, Role, Email, Phone) are required' });
 
     if (!regex.aliasId.test(AliasId))
@@ -358,10 +365,11 @@ const AdminController = {
 
     const newAdmin = await Admin.create({
       AliasId,
+      FullName: fullName,
       Role: role,
       Email: email,
       Phone: phone,
-      tempPasswordHash: hashedTempPassword,
+      PasswordHash: hashedTempPassword,
       isTempPassword: true,
       tempPasswordExpires: Date.now() + 5 * 60 * 1000,
     });
@@ -385,7 +393,7 @@ const AdminController = {
   }),
 
   resendTempPassword: asyncHandler(async (req, res) => {
-    const admin = await Admin.findById(req.params.adminId);
+    const admin = await Admin.findById(req.params.id);
     if (!admin) return res.status(404).json({ message: 'Admin/Moderator not found' });
 
     const newTempPassword = Math.random().toString(36).slice(-6);
@@ -416,17 +424,22 @@ const AdminController = {
     res.status(200).json({ message: 'New temporary password generated and sent to email and phone.' });
   }),
 
-  updatePermissions: asyncHandler(async (req, res) => {
-    const { Permissions } = req.body;
-
-    const admin = await Admin.findByIdAndUpdate(req.params.adminId, { Permissions }, { new: true });
-    if (!admin) return res.status(404).json({ message: 'Admin not found' });
-
-    res.status(200).json({ message: 'Permissions updated', admin });
-  }),
-
   deleteAdmin: asyncHandler(async (req, res) => {
-    const deleted = await Admin.findByIdAndDelete(req.params.adminId);
+    const requestingAdminId = req.user._id;
+    const targetAdminId = req.params.adminId;
+
+    // Get all admins sorted by creation time
+    const earliestAdmin = await Admin.findOne().sort({ createdAt: 1 });
+    if (!earliestAdmin) return res.status(500).json({ message: 'No admin found' });
+
+    // Only the first admin can delete
+    if (requestingAdminId.toString() !== earliestAdmin._id.toString())
+      return res.status(403).json({ message: 'Only the first registered admin can delete other admins' });
+
+    if (requestingAdminId === targetAdminId)
+      return res.status(403).json({ message: 'You cannot delete your own account' });
+
+    const deleted = await Admin.findByIdAndDelete(targetAdminId);
     if (!deleted) return res.status(404).json({ message: 'Admin not found' });
 
     res.status(200).json({ message: 'Admin deleted' });

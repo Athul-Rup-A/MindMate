@@ -26,21 +26,23 @@ const CustomTable = ({ columns, data, actions, renderExpandedRow, rowKey }) => {
                 ))}
                 {actions && (
                   <td>
-                    {actions.map((action, i) => {
-                      const shouldShow = typeof action.show === 'function' ? action.show(item, idx) : true;
+                    <div className="d-flex gap-2 flex-nowrap">
+                      {actions.map((action, i) => {
+                        const shouldShow = typeof action.show === 'function' ? action.show(item, idx) : true;
 
-                      return shouldShow ? (
-                        <Button
-                          key={i}
-                          size="sm"
-                          variant={action.variant || 'primary'}
-                          className="me-2"
-                          onClick={() => action.onClick(item, idx)}
-                        >
-                          {action.label}
-                        </Button>
-                      ) : null;
-                    })}
+                        return shouldShow ? (
+                          <Button
+                            key={i}
+                            size="sm"
+                            variant={action.variant || 'primary'}
+                            className="px-3"
+                            onClick={() => action.onClick(item, idx)}
+                          >
+                            {action.label}
+                          </Button>
+                        ) : null;
+                      })}
+                    </div>
                   </td>
                 )}
               </tr>
