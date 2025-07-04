@@ -36,6 +36,7 @@ import AdminLogin from '../pages/admin/Login'
 import AdminStat from '../pages/admin/Stat'
 import AdminApproval from '../pages/admin/Approval'
 import AdminAdmin from '../pages/admin/Admin'
+import AdminContent from '../pages/admin/Content'
 
 const AppRoutes = () => (
   <BrowserRouter>
@@ -123,12 +124,17 @@ const AppRoutes = () => (
       <Route path="/stat/admin" element={
         <ProtectedRoute><AdminStat /></ProtectedRoute>
       } />
+      
       <Route path="/approval/admin" element={
         <ProtectedRoute><AdminApproval /></ProtectedRoute>
       } />
 
       <Route path="/adminmanage/admin" element={
         <ProtectedRoute><AdminAdmin /></ProtectedRoute>
+      } />
+
+      <Route path="/content/admin" element={
+        <ProtectedRoute><AdminContent /></ProtectedRoute>
       } />
 
     </Routes>
