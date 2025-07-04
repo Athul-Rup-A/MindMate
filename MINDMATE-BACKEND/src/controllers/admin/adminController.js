@@ -261,7 +261,7 @@ const AdminController = {
     res.status(200).json({ message: 'Password changed successfully' });
   }),
 
-  // APPROVAL
+  // APPROVAL/MG COUNCPSYCH
   getPendingApprovals: asyncHandler(async (req, res) => {
     const pending = await CounselorPsychologist.find({ ApprovedByAdmin: false });
     res.status(200).json(pending);
@@ -281,6 +281,13 @@ const AdminController = {
     res.status(200).json({ message: 'Counselor/Psychologist rejected' });
   }),
 
+  deleteCounselorPsychologistAccount: asyncHandler(async (req, res) => {
+    const deleted = await CounselorPsychologist.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ message: 'Account deleted' });
+  }),
+
   // REPORT MODERATION
   getAllReports: asyncHandler(async (req, res) => {
     const reports = await Report.find().populate('ReporterId', 'AliasId')
@@ -298,18 +305,21 @@ const AdminController = {
   }),
 
   // CONTENT MODERATION
+  getAllResources: asyncHandler(async (req, res) => {
+    const resources = await Resource.find();
+    res.status(200).json(resources);
+  }),
+
+  getAllFeedbacks: asyncHandler(async (req, res) => {
+    const feedbacks = await Feedback.find().populate('StudentId', 'AliasId');
+    res.status(200).json(feedbacks);
+  }),
+
   deleteVentPost: asyncHandler(async (req, res) => {
     const deleted = await Vent.findByIdAndDelete(req.params.ventId);
     if (!deleted) return res.status(404).json({ message: 'Vent not found' });
 
     res.status(200).json({ message: 'Vent deleted' });
-  }),
-
-  deleteCounselorPsychologistAccount: asyncHandler(async (req, res) => {
-    const deleted = await CounselorPsychologist.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'User not found' });
-
-    res.status(200).json({ message: 'Account deleted' });
   }),
 
   deleteResource: asyncHandler(async (req, res) => {
@@ -324,12 +334,6 @@ const AdminController = {
     if (!deleted) return res.status(404).json({ message: 'Feedback not found' });
 
     res.status(200).json({ message: 'Feedback deleted' });
-  }),
-
-  // FEEDBACK-VIEW
-  getAllFeedbacks: asyncHandler(async (req, res) => {
-    const feedbacks = await Feedback.find().populate('StudentId', 'AliasId');
-    res.status(200).json(feedbacks);
   }),
 
   // ADMIN/MODERATOR MGMT

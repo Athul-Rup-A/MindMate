@@ -21,7 +21,7 @@ router.get('/profile', AdminModeAuth, AdminController.getProfile);
 router.put('/profile', AdminModeAuth, AdminController.updateProfile);
 router.put('/change-profile-password', AdminModeAuth, AdminController.changePassword);
 
-// Counselor/Psychologist Approval
+// Counselor/Psychologist Approval and Management
 router.get('/pending-approvals', StrictAdminAuth, AdminController.getPendingApprovals);
 router.put('/approve/:id', StrictAdminAuth, AdminController.approveCounselorPsychologist);
 router.put('/reject/:id', StrictAdminAuth, AdminController.rejectCounselorPsychologist);
