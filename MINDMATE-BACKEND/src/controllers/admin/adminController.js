@@ -34,9 +34,10 @@ const AdminController = {
       return res.status(403).json({ message: 'Signup not allowed. Admin already exists.' });
     };
 
-    const { AliasId, FullName, password, role, phone, email } = req.body;
+    const { AliasId, FullName, password, phone, email } = req.body;
+    const role = 'admin';
 
-    if (!AliasId || !FullName || !password || !role || !phone || !email) {
+    if (!AliasId || !FullName || !password || !phone || !email) {
       return res.status(400).json({ message: 'All fields required' });
     };
     if (!regex.aliasId.test(AliasId)) {
@@ -51,9 +52,6 @@ const AdminController = {
     if (!regex.email.test(req.body.email)) {
       return res.status(400).json({ message: 'Invalid email format' });
     };
-
-    if (!['admin', 'moderator'].includes(role))
-      return res.status(400).json({ message: 'Invalid role' });
 
     const existingUser = await Admin.findOne({ AliasId });
     if (existingUser) {
@@ -204,7 +202,7 @@ const AdminController = {
     user.tempPasswordExpires = null;
 
     await user.save();
-    res.status(200).json({ message: 'Password updated successfully' });
+    res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
   }),
 
   // PROFILE
@@ -297,6 +295,13 @@ const AdminController = {
     res.status(200).json(reports);
   }),
 
+  reviewReport: asyncHandler(async (req, res) => {
+    const report = await Report.findByIdAndUpdate(req.params.reportId, { Status: 'reviewed' }, { new: true });
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    res.status(200).json({ message: 'Report marked as reviewed', report });
+  }),
+
   resolveReport: asyncHandler(async (req, res) => {
     const report = await Report.findByIdAndUpdate(req.params.reportId, { Status: 'resolved' }, { new: true });
     if (!report) return res.status(404).json({ message: 'Report not found' });
@@ -387,13 +392,13 @@ const AdminController = {
             <p><strong>Alias ID:</strong> ${AliasId}</p>
             <p><strong>Temporary Password:</strong> ${tempPassword}</p>
             <p>This password will expire in 5 minutes and must be changed on first login.</p>
-            <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:3000'}/admin/login">MindMate Admin Portal</a></p>
+            <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:5173'}/admin/login">MindMate Admin Portal</a></p>
             <br/>
             <p>Regards,<br>MindMate Team</p>
         `
     });
 
-    res.status(201).json({ message: 'Admin/Moderator created and credentials sent', admin: newAdmin });
+    res.status(201).json({ message: 'Admin/Moderator created and credentials sent to registered email', admin: newAdmin });
   }),
 
   resendTempPassword: asyncHandler(async (req, res) => {
@@ -418,7 +423,7 @@ const AdminController = {
         <p>Hello <strong>${admin.AliasId}</strong>,</p>
         <p>Your new temporary password is: <strong>${newTempPassword}</strong></p>
         <p>This password will expire in 5 minutes and must be changed on your first login.</p>
-        <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:3000'}/admin/login">MindMate Admin Portal</a></p>
+        <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:5173'}/admin/login">MindMate Admin Portal</a></p>
         <br/>
         <p>Regards,<br/>MindMate Team</p>
       `

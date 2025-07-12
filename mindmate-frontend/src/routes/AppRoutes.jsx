@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/Protectedroute';
+import AdminLayout from '../Layout/AdminLayout';
 
 // Welcome page
 import Welcome from '../components/Welcome';
@@ -38,6 +39,7 @@ import AdminProfile from '../pages/admin/Profile'
 import AdminApproval from '../pages/admin/Approval'
 import AdminAdmin from '../pages/admin/Admin'
 import AdminContent from '../pages/admin/Content'
+import AdminReport from '../pages/admin/Report'
 
 const AppRoutes = () => (
   <BrowserRouter>
@@ -57,8 +59,8 @@ const AppRoutes = () => (
       <Route path="/login/counselorpsychologist" element={<CounselorPsychologistLogin />} />
 
       {/* Admin Public Routes */}
-      <Route path="/signup/admin" element={<AdminSignup />} />
-      <Route path="/login/admin" element={<AdminLogin />} />
+      <Route path="/admin/signup" element={<AdminSignup />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* Student Protected Routes */}
       <Route path="/profile" element={
@@ -122,25 +124,32 @@ const AppRoutes = () => (
       } />
 
       {/* Admin Protected Routes */}
-      <Route path="/stat/admin" element={
-        <ProtectedRoute><AdminStat /></ProtectedRoute>
-      } />
+      <Route path="admin" element={<AdminLayout />}>
 
-      <Route path="/profile/admin" element={
-        <ProtectedRoute><AdminProfile /></ProtectedRoute>
-      } />
+        <Route path="stat" element={
+          <ProtectedRoute><AdminStat /></ProtectedRoute>
+        } />
 
-      <Route path="/approval/admin" element={
-        <ProtectedRoute><AdminApproval /></ProtectedRoute>
-      } />
+        <Route path="profile" element={
+          <ProtectedRoute><AdminProfile /></ProtectedRoute>
+        } />
 
-      <Route path="/adminmanage/admin" element={
-        <ProtectedRoute><AdminAdmin /></ProtectedRoute>
-      } />
+        <Route path="approval" element={
+          <ProtectedRoute><AdminApproval /></ProtectedRoute>
+        } />
 
-      <Route path="/content/admin" element={
-        <ProtectedRoute><AdminContent /></ProtectedRoute>
-      } />
+        <Route path="adminmanage" element={
+          <ProtectedRoute><AdminAdmin /></ProtectedRoute>
+        } />
+
+        <Route path="content" element={
+          <ProtectedRoute><AdminContent /></ProtectedRoute>
+        } />
+
+        <Route path="report" element={
+          <ProtectedRoute><AdminReport /></ProtectedRoute>
+        } />
+      </Route>
 
     </Routes>
   </BrowserRouter>

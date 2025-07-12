@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
-import CustomTable from '../../components/CustomTable';
 import FormField from '../../components/FormField';
 import getCurrentUserId from '../../config/getCurrentUserId';
-import AdminHome from '../../components/AdminHome';
 import ConfirmModal from '../../components/ConfirmModal';
 import { toast } from 'react-toastify';
-import { Container, Spinner, Card, Modal, Button, Form, } from 'react-bootstrap';
+import { Container, Spinner, Card, Modal, Button, Form, Row, Col, Badge, } from 'react-bootstrap';
 import { Formik, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
@@ -74,47 +72,9 @@ const Admin = () => {
     }
   };
 
-  const columns = [
-    {
-      header: 'Alias ID',
-      accessor: (admin) =>
-        admin._id === currentUserId ? (
-          <>
-            {admin.AliasId} <span className="badge bg-info">You</span>
-          </>
-        ) : (
-          admin.AliasId
-        ),
-    },
-    { header: 'Role', accessor: 'Role' },
-    { header: 'Phone', accessor: 'Phone' },
-    { header: 'Email', accessor: 'Email' },
-  ];
-
-  const actions = [
-    {
-      label: 'ResendPassword',
-      variant: 'warning',
-      show: (admin) =>
-        currentUserId === firstAdminId && admin._id !== currentUserId,
-      onClick: handleResendTempPassword,
-    },
-    {
-      label: 'Delete',
-      variant: 'danger',
-      show: (admin) =>
-        currentUserId === firstAdminId && admin._id !== currentUserId, // First admin can delete others only
-      onClick: (admin) => {
-        setAdminToDelete(admin);
-        setShowDeleteModal(true);
-      },
-    },
-  ];
-
   if (forbidden) {
     return (
       <div className="text-center p-5">
-        <AdminHome />
         <h3 className="text-danger fw-bold">Access Denied</h3>
         <p>You do not have permission to view this page.</p>
       </div>
@@ -122,38 +82,79 @@ const Admin = () => {
   };
 
   return (
-    <div
-      style={{
-        background: 'linear-gradient(to right, #e0f7fa, #f0f4f8)',
-        minHeight: '100vh',
-        paddingTop: '40px',
-        paddingBottom: '40px',
-      }}
-    >
-      <Container>
-        <AdminHome />
-        <Card className="p-4 shadow-lg rounded-4">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h3 className="fw-bold text-primary m-0">Manage Admins&Moderators</h3>
-            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-              + Create
-            </Button>
-          </div>
+    <Container>
+      <Card
+        className="p-4 shadow-lg rounded-4"
+        style={{
+          background: 'transparent',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}
+      >
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h3 className="fw-bold m-0">Manage Admins&Moderators</h3>
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            + Create
+          </Button>
+        </div>
 
-          {loading ? (
-            <div className="text-center">
-              <Spinner animation="border" />
-            </div>
-          ) : (
-            <CustomTable
-              columns={columns}
-              data={adminList}
-              actions={actions}
-              rowKey={(item) => item._id}
-            />
-          )}
-        </Card>
-      </Container>
+        {loading ? (
+          <div className="text-center">
+            <Spinner animation="border" />
+          </div>
+        ) : (
+          <Row xs={1} md={2} lg={2} className="g-4">
+            {adminList.map((admin) => (
+              <Col key={admin._id}>
+                <Card
+                  className="shadow-sm border-0 rounded-4 p-3 h-100"
+                  style={{
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                  }}
+                >
+                  <Card.Body>
+                    <Card.Title className="fw-bold text-primary">
+                      {admin.AliasId}
+                      {admin._id === currentUserId && (
+                        <Badge bg="info" className="ms-2">You</Badge>
+                      )}
+                    </Card.Title>
+                    <Card.Text className="mb-1"><strong>Role:</strong> {admin.Role}</Card.Text>
+                    <Card.Text className="mb-1"><strong>Email:</strong> {admin.Email}</Card.Text>
+                    <Card.Text className="mb-3"><strong>Phone:</strong> {admin.Phone}</Card.Text>
+
+                    <div className="d-flex gap-2">
+                      {currentUserId === firstAdminId && admin._id !== currentUserId && (
+                        <>
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            onClick={() => handleResendTempPassword(admin)}
+                          >
+                            Resend Password
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => {
+                              setAdminToDelete(admin);
+                              setShowDeleteModal(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
+      </Card>
 
       <ConfirmModal
         show={showDeleteModal}
@@ -186,10 +187,14 @@ const Admin = () => {
               role: 'admin',
             }}
             validationSchema={Yup.object({
-              AliasId: Yup.string().required('Alias ID is required'),
+              AliasId: Yup.string()
+                .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+                .required('Alias ID is required'),
               fullName: Yup.string().required('Full Name is required'),
               email: Yup.string().email('Invalid email').required('Email is required'),
-              phone: Yup.string().matches(/^\d{10}$/, 'Phone must be 10 digits').required('Phone is required'),
+              phone: Yup.string()
+                .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian phone number')
+                .required('Phone number is required'),
               role: Yup.string().oneOf(['admin', 'moderator'], 'Invalid role').required('Role is required'),
             })}
             onSubmit={handleCreateAdmin}
@@ -223,7 +228,8 @@ const Admin = () => {
           </Formik>
         </Modal.Body>
       </Modal>
-    </div>
+
+    </Container>
   );
 };
 

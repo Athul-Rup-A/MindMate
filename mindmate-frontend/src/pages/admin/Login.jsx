@@ -10,17 +10,19 @@ import * as Yup from 'yup';
 
 const LoginSchema = (showPhone, phonePurpose) =>
     Yup.object().shape({
-        AliasId: Yup.string().test(
-            'AliasId-required',
-            'Alias ID is required',
-            function (value) {
-                return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
-            }
-        ),
+        AliasId: Yup.string()
+            .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+            .test(
+                'AliasId-required',
+                'Alias ID is required',
+                function (value) {
+                    return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
+                }
+            ),
         password: Yup.string()
             .matches(
                 /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{10,}$/,
-                'At least 10 characters, with 1 letter and 1 number'
+                'At least 10 characters including one letter and one number, alphanumeric only'
             )
             .test(
                 'password-required',
@@ -61,7 +63,7 @@ const Login = () => {
             } else {
                 toast.success('Login successful!');
                 setTimeout(() => {
-                    navigate('/stat/admin');
+                    navigate('/admin/stat');
                 }, 3500);
             }
         } catch (err) {
@@ -116,13 +118,13 @@ const Login = () => {
                             ? phonePurpose === 'forgot-password'
                                 ? 'Reset Password'
                                 : 'Recover Alias ID'
-                            : 'Admin / Moderator Login'}
+                            : 'MindMate Admin / Moderator Login'}
                     </h3>
                     <p className="text-center text-muted mb-4">
                         {showPhone
                             ? `Enter your registered phone to receive your ${phonePurpose === 'forgot-password' ? 'temporary password' : 'Alias ID'
                             }`
-                            : 'Securely manage MindMate admin operations🔐'}
+                            : 'Securely manage MindMate operations🔐'}
                     </p>
 
                     <Formik
@@ -219,13 +221,6 @@ const Login = () => {
                                         </Button>
 
                                         <div className="d-flex flex-column text-center mt-3 text-muted small">
-                                            <Button
-                                                variant="link"
-                                                className="text-decoration-none text-dark"
-                                                onClick={() => navigate('/signup/admin')}
-                                            >
-                                                Don't have an account?
-                                            </Button>
                                             <Button
                                                 variant="link"
                                                 className="text-decoration-none text-dark"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../config/axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 
 const AdminNavbar = () => {
@@ -8,6 +8,7 @@ const AdminNavbar = () => {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const fetchName = async () => {
@@ -27,7 +28,7 @@ const AdminNavbar = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
-        navigate('/login/admin', { replace: true });
+        navigate('/admin/login', { replace: true });
         window.history.pushState(null, '', window.location.href);
         window.onpopstate = () => {
             window.history.pushState(null, '', window.location.href);
@@ -35,11 +36,18 @@ const AdminNavbar = () => {
     };
 
     return (
-        <div className="d-flex justify-content-between align-items-center p-3 text-dark shadow-sm flex-wrap">
+        <div className="d-flex justify-content-between align-items-center p-3 text-dark shadow-sm flex-wrap"
+            style={{
+                backgroundColor: 'transparent',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                borderBottom: '1px solid rgba(255,255,255,0.2)',
+            }}>
             <h4 className="m-0">
                 {firstName ? (
                     <>
-                        <span className="text-light">{firstName}'s</span> • MindMate Admin
+                        {firstName}'s • <span className="text-light">MindMate Admin</span>
                     </>
                 ) : (
                     'MindMate • Admin'
@@ -56,8 +64,15 @@ const AdminNavbar = () => {
             </div>
 
             <div className="d-none d-md-flex gap-3 ms-auto">
-                <Button variant="" size="sm" onClick={() => navigate('/profile/admin')}>Profile</Button>
-                <Button variant="" size="sm" onClick={() => navigate('/approval/admin')}>Manage Approvals</Button>
+                <Button variant="" size="sm"
+                    style={location.pathname === '/admin/stat' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/admin/stat')}>Home</Button>
+                <Button variant="" size="sm"
+                    style={location.pathname === '/admin/profile' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/admin/profile')}>Profile</Button>
+                <Button variant="" size="sm"
+                    style={location.pathname === '/admin/approval' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/admin/approval')}>Manage Approvals</Button>
                 <Button variant="dark" size="sm" onClick={() => setShowMenu(true)}>
                     Menu
                 </Button>
@@ -70,13 +85,46 @@ const AdminNavbar = () => {
                     </Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body className="d-flex flex-column gap-2">
-                    <Button variant="outline-dark" className="d-md-none" onClick={() => navigate('/profile/admin')}>Profile</Button>
-                    <Button variant="outline-dark" className="d-md-none" onClick={() => navigate('/approval/admin')}>Manage Approvals</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/adminmanage/admin')}>Manage Admins</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/content/admin')}>Content Moderation</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/report/admin')}>Report Moderation</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/admin/stat' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/stat');
+                            setShowMenu(false);
+                        }}>Home</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/admin/profile' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/profile');
+                            setShowMenu(false);
+                        }}>Profile</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/admin/approval' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/approval');
+                            setShowMenu(false);
+                        }}>Manage Approvals</Button>
+                    <Button variant={location.pathname === '/admin/adminmanage' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/adminmanage');
+                            setShowMenu(false);
+                        }}>Manage Admins</Button>
+                    <Button variant={location.pathname === '/admin/content' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/content');
+                            setShowMenu(false);
+                        }}>Content Moderation</Button>
+                    <Button variant={location.pathname === '/admin/report' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/admin/report');
+                            setShowMenu(false);
+                        }}>Reporting Moderation</Button>
                     <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
                 </Offcanvas.Body>
+
+                <div className="mt-auto text-center small pt-2 pb-2 border-top">
+                    Balance ✦ Clarity ✦ Oversight
+                </div>
+
             </Offcanvas>
 
             <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>

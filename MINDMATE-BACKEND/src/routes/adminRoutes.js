@@ -29,6 +29,7 @@ router.delete('/counselorpsychologist/:id', StrictAdminAuth, AdminController.del
 
 // Report Moderation
 router.get('/reports', AdminModeAuth, AdminController.getAllReports);
+router.put('/reports/:reportId/review', AdminModeAuth, AdminController.reviewReport);
 router.put('/reports/:reportId/resolve', AdminModeAuth, AdminController.resolveReport);
 
 // Content Moderation

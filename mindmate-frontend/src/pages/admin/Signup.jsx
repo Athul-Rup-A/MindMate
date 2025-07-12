@@ -3,9 +3,9 @@ import axios from '../../config/axios';
 import FormField from '../../components/FormField';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Form, Button, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { InfoCircle, ClipboardFill, LockFill, TelephoneFill, EnvelopeFill, PersonFill } from 'react-bootstrap-icons';
-import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
+import { Formik, Form as FormikForm } from 'formik';
 import * as Yup from 'yup';
 
 const AdminSignupSchema = Yup.object().shape({
@@ -14,13 +14,12 @@ const AdminSignupSchema = Yup.object().shape({
         .required('Alias ID is required'),
     FullName: Yup.string().required('Full name is required'),
     password: Yup.string()
-        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/, 'Minimum 10 characters with 1 letter and 1 number')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/, 'Minimum 10 characters with atleast 1 letter and 1 number, alphanumeric only')
         .required('Password is required'),
     email: Yup.string().email('Invalid email format').required('Email is required'),
     phone: Yup.string()
         .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian phone number')
         .required('Phone number is required'),
-    role: Yup.string().oneOf(['admin', 'moderator'], 'Invalid role').required('Role is required'),
 });
 
 const Signup = () => {
@@ -32,7 +31,7 @@ const Signup = () => {
             await axios.post('/admin/signup', values);
             toast.success('Admin signup successful!');
             resetForm();
-            setTimeout(() => navigate('/login/admin'), 2500);
+            setTimeout(() => navigate('/admin/login'), 2500);
         } catch (err) {
             const msg = err?.response?.data?.message || 'Signup failed';
 
@@ -67,7 +66,7 @@ const Signup = () => {
                         boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}
                 >
-                    <h2 className="text-center fw-bold text-dark mb-1">Admin / Moderator Signup</h2>
+                    <h2 className="text-center fw-bold text-dark mb-1">MindMate Admin Signup</h2>
                     <p className="text-center text-muted mb-4">Register to manage MindMate securely🛡️</p>
 
                     {adminExists ? (
@@ -80,7 +79,7 @@ const Signup = () => {
                             <Button
                                 variant="dark"
                                 className="mt-3"
-                                onClick={() => navigate('/login/admin')}
+                                onClick={() => navigate('/admin/login')}
                             >
                                 Go to Login
                             </Button>
@@ -93,7 +92,6 @@ const Signup = () => {
                                 password: '',
                                 email: '',
                                 phone: '',
-                                role: '',
                             }}
                             validationSchema={AdminSignupSchema}
                             onSubmit={handleSubmit}
@@ -143,7 +141,7 @@ const Signup = () => {
                                                             placement="right"
                                                             overlay={
                                                                 <Tooltip>
-                                                                    Minimum 10 characters with at least 1 letter and 1 number
+                                                                    Minimum 10 characters with at least one letter and one number
                                                                 </Tooltip>
                                                             }
                                                         >
@@ -164,16 +162,6 @@ const Signup = () => {
                                                 placeholder="Enter email"
                                                 icon={<EnvelopeFill />}
                                             />
-
-                                            <Form.Group className="mb-4">
-                                                <Form.Label>Role</Form.Label>
-                                                <Field as="select" name="role" className="form-select">
-                                                    <option value="">Select Role</option>
-                                                    <option value="admin">Admin</option>
-                                                    <option value="moderator">Moderator</option>
-                                                </Field>
-                                                <ErrorMessage name="role" component="div" className="text-danger small mt-1" />
-                                            </Form.Group>
                                         </Col>
                                     </Row>
 
@@ -191,7 +179,7 @@ const Signup = () => {
                                         <Button
                                             variant="link"
                                             className="text-decoration-none text-dark"
-                                            onClick={() => navigate('/login/admin')}
+                                            onClick={() => navigate('/admin/login')}
                                         >
                                             Already have an account?
                                         </Button>

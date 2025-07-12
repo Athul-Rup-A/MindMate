@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import FormField from '../../components/FormField';
-import AdminHome from '../../components/AdminHome'
 import { toast } from 'react-toastify';
 import { Container, Card, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { Formik, Form as FormikForm } from 'formik';
@@ -17,7 +16,7 @@ const ProfileSchema = Yup.object().shape({
 const PasswordSchema = Yup.object().shape({
     currentPassword: Yup.string().required('Current password is required'),
     newPassword: Yup.string()
-        .matches(/^(?=.*[A-Za-z])(?=.*\d).{10,}$/, 'Min 10 characters, 1 letter & 1 number')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d).{10,}$/, 'Minimum 10 characters, one letter and one number, alphanumeric only')
         .required('New password is required'),
 });
 
@@ -81,97 +80,84 @@ const Profile = () => {
     }
 
     return (
-        <div
-            style={{
-                background: 'url("/pngtree-pa.jpg")',
-                backgroundSize: 'cover',
-                minHeight: '100vh',
-                paddingTop: '20px',
-                paddingBottom: '20px',
-                fontFamily: 'Segoe UI, sans-serif',
-            }}
-        >
-            <Container className="py-4">
+        <Container className="py-4">
+            <Row className="g-4 align-items-stretch">
+                <Col md={6} className="d-flex flex-column">
+                    <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100 bg-transparent">
+                        <h4 className="fw-bold text-primary text-center mb-3">Admin Profile</h4>
+                        <Formik
+                            enableReinitialize
+                            initialValues={{
+                                Phone: profile?.Phone || '',
+                                Email: profile?.Email || '',
+                            }}
+                            validationSchema={ProfileSchema}
+                            onSubmit={handleProfileUpdate}
+                        >
+                            {({ isSubmitting, dirty }) => (
+                                <FormikForm>
+                                    <FormField
+                                        name="Phone"
+                                        label="Phone Number"
+                                        placeholder="Enter your phone number"
+                                    />
+                                    <FormField
+                                        name="Email"
+                                        label="Email"
+                                        placeholder="Enter your email address"
+                                    />
+                                    <Button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-100 mt-3"
+                                        variant="primary"
+                                    >
+                                        {isSubmitting ? 'Updating...' : 'Update'}
+                                    </Button>
+                                </FormikForm>
+                            )}
+                        </Formik>
+                    </Card>
+                </Col>
 
-                <AdminHome />
+                <Col md={6} className="d-flex flex-column">
+                    <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100 bg-transparent">
+                        <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
+                        <Formik
+                            initialValues={{ currentPassword: '', newPassword: '' }}
+                            validationSchema={PasswordSchema}
+                            onSubmit={handlePasswordChange}
+                        >
+                            {({ isSubmitting }) => (
+                                <FormikForm>
+                                    <FormField
+                                        name="currentPassword"
+                                        label="Current Password"
+                                        type="password"
+                                        placeholder="Enter current password"
+                                    />
+                                    <FormField
+                                        name="newPassword"
+                                        label="New Password"
+                                        type="password"
+                                        placeholder="Enter new password"
+                                    />
+                                    <Button
+                                        variant="danger"
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-100 mt-2"
+                                    >
+                                        {isSubmitting ? 'Changing...' : 'Change Password'}
+                                    </Button>
+                                </FormikForm>
+                            )}
+                        </Formik>
+                    </Card>
+                </Col>
+            </Row>
 
-                <Row className="g-4 align-items-stretch">
-                    <Col md={6} className="d-flex flex-column">
-                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100 bg-transparent">
-                            <h4 className="fw-bold text-primary text-center mb-3">Admin Profile</h4>
-                            <Formik
-                                enableReinitialize
-                                initialValues={{
-                                    Phone: profile?.Phone || '',
-                                    Email: profile?.Email || '',
-                                }}
-                                validationSchema={ProfileSchema}
-                                onSubmit={handleProfileUpdate}
-                            >
-                                {({ isSubmitting, dirty }) => (
-                                    <FormikForm>
-                                        <FormField
-                                            name="Phone"
-                                            label="Phone Number"
-                                            placeholder="Enter your phone number"
-                                        />
-                                        <FormField
-                                            name="Email"
-                                            label="Email"
-                                            placeholder="Enter your email address"
-                                        />
-                                        <Button
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="w-100 mt-3"
-                                            variant="primary"
-                                        >
-                                            {isSubmitting ? 'Updating...' : 'Update'}
-                                        </Button>
-                                    </FormikForm>
-                                )}
-                            </Formik>
-                        </Card>
-                    </Col>
-
-                    <Col md={6} className="d-flex flex-column">
-                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100 bg-transparent">
-                            <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
-                            <Formik
-                                initialValues={{ currentPassword: '', newPassword: '' }}
-                                validationSchema={PasswordSchema}
-                                onSubmit={handlePasswordChange}
-                            >
-                                {({ isSubmitting }) => (
-                                    <FormikForm>
-                                        <FormField
-                                            name="currentPassword"
-                                            label="Current Password"
-                                            type="password"
-                                            placeholder="Enter current password"
-                                        />
-                                        <FormField
-                                            name="newPassword"
-                                            label="New Password"
-                                            type="password"
-                                            placeholder="Enter new password"
-                                        />
-                                        <Button
-                                            variant="danger"
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="w-100 mt-2"
-                                        >
-                                            {isSubmitting ? 'Changing...' : 'Change Password'}
-                                        </Button>
-                                    </FormikForm>
-                                )}
-                            </Formik>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
-        </div>
+        </Container>
     );
 };
 

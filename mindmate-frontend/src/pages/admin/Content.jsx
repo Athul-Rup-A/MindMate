@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
-import AdminHome from '../../components/AdminHome';
 import ConfirmModal from '../../components/ConfirmModal';
 import { toast } from 'react-toastify';
 import { Container, Spinner, Card, Collapse, } from 'react-bootstrap';
@@ -105,68 +104,58 @@ const Content = () => {
   );
 
   return (
-    <div
-      style={{
-        background: 'linear-gradient(to right, #f0f4f8, #e0f7fa)',
-        minHeight: '100vh',
-        paddingTop: '40px',
-        paddingBottom: '40px',
-      }}
-    >
-      <Container>
-        <AdminHome />
+    <Container>
+      {renderCard(
+        'vents',
+        'VentWall Posts',
+        <ChatDots size={22} />,
+        vents,
+        [
+          { header: 'Topic', accessor: 'Topic' },
+          { header: 'Content', accessor: 'Content' },
+        ],
+        'Vent'
+      )}
 
-        {renderCard(
-          'vents',
-          'VentWall Posts',
-          <ChatDots size={22} />,
-          vents,
-          [
-            { header: 'Topic', accessor: 'Topic' },
-            { header: 'Content', accessor: 'Content' },
-          ],
-          'Vent'
-        )}
+      {renderCard(
+        'feedbacks',
+        'Feedbacks',
+        <StarFill size={22} />,
+        feedbacks,
+        [
+          { header: 'Type', accessor: 'Type' },
+          { header: 'Comment', accessor: 'Comment' },
+          { header: 'Rating', accessor: 'Rating' },
+        ],
+        'Feedback'
+      )}
 
-        {renderCard(
-          'feedbacks',
-          'Feedbacks',
-          <StarFill size={22} />,
-          feedbacks,
-          [
-            { header: 'Type', accessor: 'Type' },
-            { header: 'Comment', accessor: 'Comment' },
-            { header: 'Rating', accessor: 'Rating' },
-          ],
-          'Feedback'
-        )}
+      {renderCard(
+        'resources',
+        'Resources',
+        <FileEarmarkText size={22} />,
+        resources,
+        [
+          { header: 'Title', accessor: 'title' },
+          { header: 'Category', accessor: 'type' },
+          { header: 'Link', accessor: 'link' },
+        ],
+        'Resource'
+      )}
 
-        {renderCard(
-          'resources',
-          'Resources',
-          <FileEarmarkText size={22} />,
-          resources,
-          [
-            { header: 'Title', accessor: 'title' },
-            { header: 'Category', accessor: 'type' },
-            { header: 'Link', accessor: 'link' },
-          ],
-          'Resource'
-        )}
+      <ConfirmModal
+        show={showConfirm}
+        onHide={() => setShowConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        message={
+          <p>
+            Are you sure you want to delete this{' '}
+            <span className="fw-bold">{deleteTarget.type}</span>?
+          </p>
+        }
+      />
 
-        <ConfirmModal
-          show={showConfirm}
-          onHide={() => setShowConfirm(false)}
-          onConfirm={handleConfirmDelete}
-          message={
-            <p>
-              Are you sure you want to delete this{' '}
-              <span className="fw-bold">{deleteTarget.type}</span>?
-            </p>
-          }
-        />
-      </Container>
-    </div>
+    </Container>
   );
 };
 

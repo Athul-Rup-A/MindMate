@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
@@ -38,12 +38,23 @@ const ForceResetPassword = () => {
         .required('Password is required')
         .min(minLength, `Password must be at least ${minLength} characters`)
         .matches(/[A-Za-z]/, 'At least one letter required')
-        .matches(/[0-9]/, 'At least one number required'),
+        .matches(/[0-9]/, 'At least one number required')
+        .matches(/^[A-Za-z0-9]+$/, 'Only letters and numbers allowed'),
       confirmPassword: Yup.string()
         .required('Please confirm your password')
         .oneOf([Yup.ref('newPassword')], 'Passwords must match'),
     });
   };
+
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     if (!userId) {
@@ -51,7 +62,7 @@ const ForceResetPassword = () => {
 
       const loginPath =
         role === 'admin'
-          ? '/login/admin'
+          ? '/admin/login'
           : role === 'counselorPsychologist'
             ? '/login/counselorpsychologist'
             : '/login/student';
@@ -71,7 +82,7 @@ const ForceResetPassword = () => {
 
         const loginPath =
           role === 'admin'
-            ? '/login/admin'
+            ? '/admin/login'
             : role === 'counselorPsychologist'
               ? '/login/counselorpsychologist'
               : '/login/student';
@@ -118,7 +129,7 @@ const ForceResetPassword = () => {
                       placement="right"
                       overlay={
                         <Tooltip>
-                          Minimum {minLength} characters with 1 letter and 1 number required.
+                          Minimum {minLength} characters with atleast one letter and one number required.
                         </Tooltip>
                       }
                     >

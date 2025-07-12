@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
-import AdminHome from '../../components/AdminHome';
 import ConfirmModal from '../../components/ConfirmModal';
 import { toast } from 'react-toastify';
 import { Container, Spinner, Card, } from 'react-bootstrap';
@@ -131,7 +130,6 @@ const Approval = () => {
   if (forbidden) {
     return (
       <div className="text-center p-5">
-        <AdminHome />
         <h3 className="text-danger fw-bold">Access Denied</h3>
         <p>You do not have permission to view this page.</p>
       </div>
@@ -139,50 +137,50 @@ const Approval = () => {
   };
 
   return (
-    <div
-      style={{
-        background: 'linear-gradient(to right, #cbd5e1, #e2e8f0)',
-        minHeight: '100vh',
-        paddingTop: '40px',
-        paddingBottom: '40px',
-      }}
-    >
-      <Container>
+    <Container>
+      <Card
+        className="p-4 shadow-lg rounded-4"
+        style={{
+          background: 'transparent',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+        <h3 className="text-center mb-4 fw-bold text-primary">Pending Approvals</h3>
+        {loading ? (
+          <div className="text-center">
+            <Spinner animation="border" />
+          </div>
+        ) : (
+          <CustomTable
+            columns={columns}
+            data={pendingList}
+            actions={actions}
+            rowKey={(item) => item._id}
+          />
+        )}
+      </Card>
 
-        <AdminHome />
-
-        <Card className="p-4 shadow-lg rounded-4">
-          <h3 className="text-center mb-4 fw-bold text-primary">Pending Approvals</h3>
-          {loading ? (
-            <div className="text-center">
-              <Spinner animation="border" />
-            </div>
-          ) : (
-            <CustomTable
-              columns={columns}
-              data={pendingList}
-              actions={actions}
-              rowKey={(item) => item._id}
-            />
-          )}
-        </Card>
-
-        <Card className="p-4 shadow-lg rounded-4 mt-4">
-          <h4 className="fw-bold text-primary mb-3">Counselors & Psychologists</h4>
-          {loading ? (
-            <div className="text-center">
-              <Spinner animation="border" />
-            </div>
-          ) : (
-            <CustomTable
-              columns={counselorPsychologistColumns}
-              data={counpsycho}
-              actions={counselorPsychologistActions}
-              rowKey={(item) => item._id}
-            />
-          )}
-        </Card>
-      </Container>
+      <Card
+        className="p-4 shadow-lg rounded-4 mt-4"
+        style={{
+          background: 'transparent',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}>
+        <h4 className="fw-bold text-primary mb-3">Counselors & Psychologists</h4>
+        {loading ? (
+          <div className="text-center">
+            <Spinner animation="border" />
+          </div>
+        ) : (
+          <CustomTable
+            columns={counselorPsychologistColumns}
+            data={counpsycho}
+            actions={counselorPsychologistActions}
+            rowKey={(item) => item._id}
+          />
+        )}
+      </Card>
 
       <ConfirmModal
         show={showModal}
@@ -212,7 +210,7 @@ const Approval = () => {
         }
       />
 
-    </div>
+    </Container>
   );
 };
 
