@@ -27,28 +27,102 @@ const CounselorPsychologistNavbar = () => {
     }, []);
 
     return (
-        <div className="d-flex justify-content-between align-items-center p-3 text-dark shadow-sm">
-            <h4 className="m-0">MindMate</h4>
+        <div className="d-flex justify-content-between align-items-center p-3 text-dark shadow-sm flex-wrap"
+            style={{
+                backgroundColor: 'transparent',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                borderBottom: '1px solid rgba(255,255,255,0.2)',
+            }}>
+            <h4 className="m-0">
+                {firstName ? (
+                    <>
+                        {firstName}'s • <span style={{ color: 'white' }}>MindMentor</span>
+                    </>
+                ) : (
+                    <span style={{ color: 'white' }}>MindMentor</span>
+                )}
+            </h4>
 
-            <div className="d-flex gap-3">
-                <Button variant="outline-dark" size="sm" onClick={() => navigate('/profile/counselorpsychologist')}>Profile</Button>
-                <Button variant="outline-dark" size="sm" onClick={() => navigate('/availability/counselorpsychologist')}>Availability</Button>
+            <div className="d-md-none">
+                <Button variant="outline-dark" size="sm"
+                    style={{
+                        padding: '4px 10px'
+                    }}
+                    onClick={() => setShowMenu(true)}>
+                </Button>
+            </div>
+
+            <div className="d-none d-md-flex gap-3 ms-auto">
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
+                    style={location.pathname === '/counselorpsychologist/appointments' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/counselorpsychologist/appointments')}>Home</Button>
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
+                    style={location.pathname === '/counselorpsychologist/profile' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/counselorpsychologist/profile')}>Profile</Button>
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
+                    style={location.pathname === '/counselorpsychologist/availability' ? { borderBottom: '2px solid black' } : {}}
+                    onClick={() => navigate('/counselorpsychologist/availability')}>Availability</Button>
                 <Button variant="dark" size="sm" onClick={() => setShowMenu(true)}>Menu</Button>
             </div>
 
             <Offcanvas show={showMenu} onHide={() => setShowMenu(false)} placement="end">
                 <Offcanvas.Header closeButton>
                     <Offcanvas.Title className="fs-4">
-                        {firstName ? `${firstName}'s • MindMentor` : 'MindMentor'}
+                        {firstName ? `${firstName}'s • Desk` : "Mentor's • Desk"}
                     </Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body className="d-flex flex-column gap-2">
-                    <Button variant="outline-dark" onClick={() => navigate('/resource/counselorpsychologist')}>Manage Resources</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/wellness/counselorpsychologist')}>Wellness View</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/feedback/counselorpsychologist')}>Feedbacks</Button>
-                    <Button variant="outline-dark" onClick={() => navigate('/sos/counselorpsychologist')}>SOS Logs</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/counselorpsychologist/appointments' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/appointments');
+                            setShowMenu(false);
+                        }}>Home</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/counselorpsychologist/profile' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/profile');
+                            setShowMenu(false);
+                        }}>Profile</Button>
+                    <Button className="d-md-none"
+                        variant={location.pathname === '/counselorpsychologist/approval' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/availability');
+                            setShowMenu(false);
+                        }}>Availability</Button>
+
+                    <Button variant={location.pathname === '/counselorpsychologist/resource' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/resource');
+                            setShowMenu(false);
+                        }}>Manage Resources</Button>
+                    <Button variant={location.pathname === '/counselorpsychologist/wellness' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/wellness');
+                            setShowMenu(false);
+                        }}>Wellness View</Button>
+                    <Button variant={location.pathname === '/counselorpsychologist/feedback' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/feedback');
+                            setShowMenu(false);
+                        }}>Feedbacks</Button>
+                    <Button variant={location.pathname === '/counselorpsychologist/sos' ? 'light' : 'outline-dark'}
+                        onClick={() => {
+                            navigate('/counselorpsychologist/sos');
+                            setShowMenu(false);
+                        }}>SOS Logs</Button>
                     <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
                 </Offcanvas.Body>
+
+                <div className="mt-auto text-center small pt-2 pb-2 border-top">
+                    Empathy ✦ Support ✦ Guidance
+                </div>
+
             </Offcanvas>
 
             <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>

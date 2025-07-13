@@ -10,13 +10,14 @@ import * as Yup from 'yup';
 
 const SignupSchema = Yup.object().shape({
     fullName: Yup.string().required('Full name is required'),
-    AliasId: Yup.string().min(4, 'Minimum 4 characters').required('Alias ID is required'),
+    AliasId: Yup.string()
+        .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+        .required('Alias ID is required'),
     password: Yup.string()
-        .matches(
-            /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
-            'At least 6 characters, including 1 letter, and 1 number'
-        )
-        .required('Password is required'),
+        .required('Password is required')
+        .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
+        .matches(/[A-Za-z]/, 'At least one letter required')
+        .matches(/[0-9]/, 'At least one number required'),
     email: Yup.string().email('Invalid email').required('Email is required'),
     phone: Yup.string()
         .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian phone number')
@@ -34,7 +35,7 @@ const Signup = () => {
             await axios.post('counselorPsychologist/signup', values);
             toast.success('Signup successful! Await admin approval.');
             resetForm();
-            setTimeout(() => navigate('/login/counselorpsychologist'), 2500);
+            setTimeout(() => navigate('/counselorpsychologist/login'), 2500);
         } catch (err) {
             const msg = err?.response?.data?.message || 'Something went wrong';
             toast.error(msg);
@@ -44,16 +45,26 @@ const Signup = () => {
     return (
         <div
             style={{
-                background: 'linear-gradient(to right, rgb(161, 196, 253), rgb(200, 180, 100))',
+                backgroundImage: 'url("/Gpt2.png")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: '40px 0',
             }}
         >
             <Container style={{ maxWidth: '900px', }}>
-                <Card className="p-4 shadow-lg rounded-4">
-                    <h3 className="text-center fw-bold text-primary mb-1">Join as Counselor / Psychologist</h3>
+                <Card className="p-4 shadow-lg rounded-4"
+                    style={{
+                        background: 'transparent',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                    }}
+                >
+                    <h3 className="text-center fw-bold text-dark mb-1">MindMate Counselor/Psychologist SignUp</h3>
                     <p className="text-center text-muted mb-4">
                         Make a difference in students’ lives today 🌿
                     </p>
@@ -166,7 +177,7 @@ const Signup = () => {
                                 <Button
                                     type="submit"
                                     className="w-100 mt-3 fw-semibold"
-                                    variant="primary"
+                                    variant="dark"
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? 'Signing Up...' : 'Sign Up'}
@@ -175,8 +186,8 @@ const Signup = () => {
                                 <div className="text-center mt-3">
                                     <Button
                                         variant="link"
-                                        className="text-decoration-none"
-                                        onClick={() => navigate('/login/counselorpsychologist')}
+                                        className="text-decoration-none text-dark"
+                                        onClick={() => navigate('/counselorpsychologist/login')}
                                     >
                                         Already have an account?
                                     </Button>

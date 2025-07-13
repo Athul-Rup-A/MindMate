@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
-import CouncPsychHome from '../../components/CouncPsychHome'
 import { toast } from 'react-toastify';
 import { Container, Card, Spinner } from 'react-bootstrap';
 
@@ -40,32 +39,21 @@ const Feedback = () => {
     ];
 
     return (
-        <div
-            style={{
-                background: 'linear-gradient(to right, #fbc2eb, #a6c1ee)',
-                minHeight: '100vh',
-                paddingTop: '40px',
-            }}
-        >
-            <Container style={{ maxWidth: '1200px' }}>
+        <Container>
+            <Card className="p-4 shadow-lg rounded-4">
+                <h4 className="fw-bold text-dark text-center mb-4">Session Feedbacks</h4>
 
-                <CouncPsychHome />
-
-                <Card className="p-4 shadow-lg rounded-4">
-                    <h4 className="fw-bold text-dark text-center mb-4">Session Feedbacks</h4>
-
-                    {loading ? (
-                        <div className="text-center"><Spinner animation="border" /></div>
-                    ) : (
-                        <CustomTable
-                            columns={columns}
-                            data={feedbacks}
-                            rowKey={(item) => item._id}
-                        />
-                    )}
-                </Card>
-            </Container>
-        </div>
+                {loading ? (
+                    <div className="text-center"><Spinner animation="border" /></div>
+                ) : (
+                    <CustomTable
+                        columns={columns}
+                        data={feedbacks}
+                        rowKey={(item) => item._id}
+                    />
+                )}
+            </Card>
+        </Container>
     );
 };
 

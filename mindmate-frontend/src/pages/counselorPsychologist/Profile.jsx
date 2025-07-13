@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import FormField from '../../components/FormField';
-import CouncPsychHome from '../../components/CouncPsychHome'
 import { toast } from 'react-toastify';
 import { Container, Card, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { Formik, Form as FormikForm } from 'formik';
@@ -89,94 +88,82 @@ const Profile = () => {
     }
 
     return (
-        <div
-            style={{
-                background: 'linear-gradient(to right, #93c5fd, #e9d5ff, #93e5bd)',
-                minHeight: '100vh',
-                paddingTop: '20px',
-                paddingBottom: '20px'
-            }}
-        >
-            <Container className="py-4">
+        <Container>
+            <Row className="g-4 align-items-stretch">
+                <Col md={6} className="d-flex flex-column">
+                    <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
+                        <h4 className="fw-bold text-primary text-center mb-3">Your Profile</h4>
+                        <Formik
+                            initialValues={{
+                                FullName: profile?.FullName || '',
+                                Phone: profile?.Phone || '',
+                                Email: profile?.Email || '',
+                                Credentials: profile?.Credentials || '',
+                                Specialization: profile?.Specialization || '',
+                            }}
+                            validationSchema={ProfileSchema}
+                            enableReinitialize
+                            onSubmit={handleProfileUpdate}
+                        >
+                            {({ isSubmitting, dirty }) => (
+                                <FormikForm>
 
-                <CouncPsychHome />
+                                    <Row>
+                                        <FormField name="FullName" label="Full Name" placeholder="Enter your full name" />
+                                        <Col md={6}>
+                                            <FormField name="Credentials" label="Credentials" placeholder="Enter your credentials" />
+                                            <FormField name="Phone" label="Phone Number" placeholder="Enter your phone number" />
+                                        </Col>
 
-                <Row className="g-4 align-items-stretch">
-                    <Col md={6} className="d-flex flex-column">
-                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
-                            <h4 className="fw-bold text-primary text-center mb-3">Your Profile</h4>
-                            <Formik
-                                initialValues={{
-                                    FullName: profile?.FullName || '',
-                                    Phone: profile?.Phone || '',
-                                    Email: profile?.Email || '',
-                                    Credentials: profile?.Credentials || '',
-                                    Specialization: profile?.Specialization || '',
-                                }}
-                                validationSchema={ProfileSchema}
-                                enableReinitialize
-                                onSubmit={handleProfileUpdate}
-                            >
-                                {({ isSubmitting, dirty }) => (
-                                    <FormikForm>
+                                        <Col md={6}>
+                                            <FormField name="Specialization" label="Specialization" placeholder="Enter your specialization" />
+                                            <FormField name="Email" label="Email" placeholder="Enter your email address" />
+                                        </Col>
+                                    </Row>
 
-                                        <Row>
-                                            <FormField name="FullName" label="Full Name" placeholder="Enter your full name" />
-                                            <Col md={6}>
-                                                <FormField name="Credentials" label="Credentials" placeholder="Enter your credentials" />
-                                                <FormField name="Phone" label="Phone Number" placeholder="Enter your phone number" />
-                                            </Col>
+                                    <Button type="submit" disabled={isSubmitting} className="w-100 mt-3" variant="primary">
+                                        {isSubmitting ? 'Updating...' : 'Update Profile'}
+                                    </Button>
+                                </FormikForm>
+                            )}
+                        </Formik>
+                    </Card>
+                </Col>
 
-                                            <Col md={6}>
-                                                <FormField name="Specialization" label="Specialization" placeholder="Enter your specialization" />
-                                                <FormField name="Email" label="Email" placeholder="Enter your email address" />
-                                            </Col>
-                                        </Row>
-
-                                        <Button type="submit" disabled={isSubmitting} className="w-100 mt-3" variant="primary">
-                                            {isSubmitting ? 'Updating...' : 'Update Profile'}
-                                        </Button>
-                                    </FormikForm>
-                                )}
-                            </Formik>
-                        </Card>
-                    </Col>
-
-                    <Col md={6} className="d-flex flex-column">
-                        <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
-                            <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
-                            <Formik
-                                initialValues={{ currentPassword: '', newPassword: '' }}
-                                validationSchema={PasswordSchema}
-                                onSubmit={handlePasswordChange}
-                            >
-                                {({ isSubmitting }) => (
-                                    <FormikForm>
-                                        <FormField
-                                            name="currentPassword"
-                                            label="Current Password"
-                                            type="password"
-                                            placeholder="Enter your current password"
-                                            className="mb-4"
-                                        />
-                                        <FormField
-                                            name="newPassword"
-                                            label="New Password"
-                                            type="password"
-                                            placeholder="Enter your new password"
-                                            className="mb-4"
-                                        />
-                                        <Button variant="danger" type="submit" disabled={isSubmitting} className="w-100 mt-2">
-                                            {isSubmitting ? 'Changing...' : 'Change Password'}
-                                        </Button>
-                                    </FormikForm>
-                                )}
-                            </Formik>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
-        </div>
+                <Col md={6} className="d-flex flex-column">
+                    <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
+                        <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
+                        <Formik
+                            initialValues={{ currentPassword: '', newPassword: '' }}
+                            validationSchema={PasswordSchema}
+                            onSubmit={handlePasswordChange}
+                        >
+                            {({ isSubmitting }) => (
+                                <FormikForm>
+                                    <FormField
+                                        name="currentPassword"
+                                        label="Current Password"
+                                        type="password"
+                                        placeholder="Enter your current password"
+                                        className="mb-4"
+                                    />
+                                    <FormField
+                                        name="newPassword"
+                                        label="New Password"
+                                        type="password"
+                                        placeholder="Enter your new password"
+                                        className="mb-4"
+                                    />
+                                    <Button variant="danger" type="submit" disabled={isSubmitting} className="w-100 mt-2">
+                                        {isSubmitting ? 'Changing...' : 'Change Password'}
+                                    </Button>
+                                </FormikForm>
+                            )}
+                        </Formik>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 

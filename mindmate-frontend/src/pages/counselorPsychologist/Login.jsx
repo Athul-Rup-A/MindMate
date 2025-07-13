@@ -10,18 +10,19 @@ import * as Yup from 'yup';
 
 const LoginSchema = (showPhone, phonePurpose) =>
     Yup.object().shape({
-        AliasId: Yup.string().test(
-            'AliasId-required',
-            'Alias ID is required',
-            function (value) {
-                return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
-            }
-        ),
+        AliasId: Yup.string()
+            .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+            .test(
+                'AliasId-required',
+                'Alias ID is required',
+                function (value) {
+                    return showPhone && phonePurpose === 'forgot-aliasid' ? true : !!value;
+                }
+            ),
         password: Yup.string()
-            .matches(
-                /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
-                'At least 6 characters, with 1 letter and 1 number'
-            )
+            .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
+            .matches(/[A-Za-z]/, 'At least one letter required')
+            .matches(/[0-9]/, 'At least one number required')
             .test(
                 'password-required',
                 'Password is required',
@@ -61,7 +62,7 @@ const Login = () => {
             } else {
                 toast.success('Login successful!');
                 setTimeout(() => {
-                    navigate('/appointments/counselorpsychologist');
+                    navigate('/counselorpsychologist/appointments');
                 }, 3500);
             }
         } catch (err) {
@@ -91,21 +92,31 @@ const Login = () => {
     return (
         <div
             style={{
-                background: 'linear-gradient(to right, rgb(100, 180, 200), rgb(224, 195, 252))',
+                backgroundImage: 'url("/Gpt2.png")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: '40px 0',
             }}
         >
             <Container style={{ maxWidth: '700px' }}>
-                <Card className="p-4 shadow-lg rounded-4">
-                    <h3 className="text-center fw-bold text-primary mb-1">
+                <Card className="p-4 shadow-lg rounded-4"
+                    style={{
+                        background: 'transparent',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                    }}
+                >
+                    <h3 className="text-center fw-bold text-dark mb-1">
                         {showPhone
                             ? phonePurpose === 'forgot-password'
                                 ? 'Reset Password'
                                 : 'Recover Alias ID'
-                            : 'Counselor / Psychologist Login'}
+                            : 'MindMate Counselor/Psychologist Login'}
                     </h3>
                     <p className="text-center text-muted mb-4">
                         {showPhone
@@ -144,7 +155,7 @@ const Login = () => {
                                                                     placement="right"
                                                                     overlay={
                                                                         <Tooltip>
-                                                                            Your secure login password which contain at least 6 characters, 1 letter, and 1 number.
+                                                                            Your secure login password which contain at least 6 characters, one letter, and one number.
                                                                         </Tooltip>
                                                                     }
                                                                 >
@@ -200,7 +211,7 @@ const Login = () => {
                                         <Button
                                             type="submit"
                                             className="w-100 fw-semibold mt-2"
-                                            variant="primary"
+                                            variant="dark"
                                             disabled={isSubmitting}
                                         >
                                             {isSubmitting ? 'Logging in...' : 'Login'}
@@ -209,14 +220,14 @@ const Login = () => {
                                         <div className="d-flex flex-column text-center mt-3 text-muted small">
                                             <Button
                                                 variant="link"
-                                                className="text-decoration-none"
-                                                onClick={() => navigate('/signup/counselorpsychologist')}
+                                                className="text-decoration-none text-dark"
+                                                onClick={() => navigate('/counselorpsychologist/signup')}
                                             >
                                                 Don't have an account?
                                             </Button>
                                             <Button
                                                 variant="link"
-                                                className="text-decoration-none"
+                                                className="text-decoration-none text-dark"
                                                 onClick={() => {
                                                     setPhonePurpose('forgot-password');
                                                     setShowPhone(true);
@@ -227,7 +238,7 @@ const Login = () => {
                                             </Button>
                                             <Button
                                                 variant="link"
-                                                className="text-decoration-none"
+                                                className="text-decoration-none text-dark"
                                                 onClick={() => {
                                                     setPhonePurpose('forgot-aliasid');
                                                     setShowPhone(true);

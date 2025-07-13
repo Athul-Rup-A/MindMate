@@ -14,16 +14,16 @@ const Welcome = () => {
             }}
         >
             {/* Top Navigation */}
-            <Navbar bg="light" expand="lg" className="shadow-sm">
+            <Navbar bg="light" expand="sm" className="shadow-sm">
                 <Container>
                     <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-4">
                         🌿 MindMate
                     </Navbar.Brand>
                     <Nav className="ms-auto">
-                        <Nav.Link as={Link} to="/login/student" className="me-3 mt-1 fw-semibold">
+                        <Nav.Link as={Link} to="/login/student" className="fw-semibold">
                             Student Login
                         </Nav.Link>
-                        <Nav.Link as={Link} to="/login/counselorpsychologist" className="me-3 mt-1 fw-semibold">
+                        <Nav.Link as={Link} to="/counselorpsychologist/login" className="fw-semibold">
                             Counselor Login
                         </Nav.Link>
                     </Nav>
@@ -53,7 +53,7 @@ const Welcome = () => {
                                 <Button as={Link} to="/signup/student" variant="primary" size="lg">
                                     Join as Student
                                 </Button>
-                                <Button as={Link} to="/signup/counselorpsychologist" variant="success" size="lg">
+                                <Button as={Link} to="counselorpsychologist/signup/" variant="success" size="lg">
                                     Join as Counselor
                                 </Button>
                             </div>

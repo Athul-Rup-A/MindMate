@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/Protectedroute';
+import CounselorPsychologistLayout from '../Layout/CounselorPsychologistLayout';
 import AdminLayout from '../Layout/AdminLayout';
 
 // Welcome page
@@ -55,8 +56,8 @@ const AppRoutes = () => (
       <Route path="/login/student" element={<Login />} />
 
       {/* Counselor&Psychologist Public Routes */}
-      <Route path="/signup/counselorpsychologist" element={<CounselorPsychologistSignup />} />
-      <Route path="/login/counselorpsychologist" element={<CounselorPsychologistLogin />} />
+      <Route path="/counselorpsychologist/signup" element={<CounselorPsychologistSignup />} />
+      <Route path="/counselorpsychologist/login" element={<CounselorPsychologistLogin />} />
 
       {/* Admin Public Routes */}
       <Route path="/admin/signup" element={<AdminSignup />} />
@@ -95,33 +96,36 @@ const AppRoutes = () => (
       } />
 
       {/* Counselor&Psychologist Protected Routes */}
-      <Route path="/profile/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistProfile /></ProtectedRoute>
-      } />
+      <Route path="counselorpsychologist" element={<CounselorPsychologistLayout />}>
 
-      <Route path="/appointments/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistAppointment /></ProtectedRoute>
-      } />
+        <Route path="profile" element={
+          <ProtectedRoute><CounselorPsychologistProfile /></ProtectedRoute>
+        } />
 
-      <Route path="/availability/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistAvailability /></ProtectedRoute>
-      } />
+        <Route path="appointments" element={
+          <ProtectedRoute><CounselorPsychologistAppointment /></ProtectedRoute>
+        } />
 
-      <Route path="/feedback/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistFeedback /></ProtectedRoute>
-      } />
+        <Route path="availability" element={
+          <ProtectedRoute><CounselorPsychologistAvailability /></ProtectedRoute>
+        } />
 
-      <Route path="/sos/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistSOS /></ProtectedRoute>
-      } />
+        <Route path="feedback" element={
+          <ProtectedRoute><CounselorPsychologistFeedback /></ProtectedRoute>
+        } />
 
-      <Route path="/resource/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistResource /></ProtectedRoute>
-      } />
+        <Route path="sos" element={
+          <ProtectedRoute><CounselorPsychologistSOS /></ProtectedRoute>
+        } />
 
-      <Route path="/wellness/counselorpsychologist" element={
-        <ProtectedRoute><CounselorPsychologistWellness /></ProtectedRoute>
-      } />
+        <Route path="resource" element={
+          <ProtectedRoute><CounselorPsychologistResource /></ProtectedRoute>
+        } />
+
+        <Route path="wellness" element={
+          <ProtectedRoute><CounselorPsychologistWellness /></ProtectedRoute>
+        } />
+      </Route>
 
       {/* Admin Protected Routes */}
       <Route path="admin" element={<AdminLayout />}>

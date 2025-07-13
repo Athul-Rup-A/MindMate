@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import { toast } from 'react-toastify';
-import CustomTable from '../../components/CustomTable';
 import { Container, Card, Spinner, Form } from 'react-bootstrap';
-import Navbar from '../../components/CounselorPsychologistNavbar'
-import Footer from '../../components/Footer'
 
 const statusOptions = ['confirmed', 'rejected', 'completed'];
 
@@ -51,75 +48,56 @@ const Appointment = () => {
         }
     };
 
-    const columns = [
-        { header: '#', accessor: (_, idx) => idx + 1 },
-        { header: 'Student', accessor: (item) => item.StudentId?.AliasId || 'N/A' },
-        {
-            header: 'Day & Date',
-            accessor: (item) => formatFullDateWithDay(item.SlotDate),
-        },
-        { header: 'Start Time', accessor: 'SlotStartTime' },
-        { header: 'End Time', accessor: 'SlotEndTime' },
-        {
-            header: 'Status',
-            accessor: (item) => (
-                <Form.Select
-                    size="sm"
-                    value={item.Status || 'pending'}
-                    onChange={(e) => handleStatusChange(item._id, e.target.value)}
-                    disabled={updatingId === item._id}
-                >
-                    <option value="pending" disabled>
-                        pending
-                    </option>
-                    {statusOptions.map((s) => (
-                        <option key={s} value={s}>
-                            {s}
-                        </option>
-                    ))}
-                </Form.Select>
-            ),
-        },
-    ];
-
     return (
-        <>
-            <div
+        <Container>
+            <Card
                 style={{
-                    background: 'linear-gradient(to right, #a18cd1, #00e3ae)',
-                    minHeight: '100vh',
+                    background: 'transparent',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}
-            >
-                <Navbar />
+                className="p-4 shadow-lg rounded-4">
+                <h4 className="fw-bold text-dark text-center mb-4">Your Appointments</h4>
 
-                <Container style={{
-                    maxWidth: '1300px',
-                    paddingTop: '40px'
-                }}>
-                    <Card
-                        style={{
-                            background: 'linear-gradient(to right, #00e3ae, #a18cd1)',
-                        }}
-                        className="p-4 shadow-lg rounded-4">
-                        <h4 className="fw-bold text-dark text-center mb-4">Your Appointments</h4>
-
-                        {loading ? (
-                            <div className="text-center">
-                                <Spinner animation="border" />
+                {loading ? (
+                    <div className="text-center">
+                        <Spinner animation="border" />
+                    </div>
+                ) : (
+                    <div className="row row-cols-1 row-cols-md-2 g-4">
+                        {appointments.map((item, idx) => (
+                            <div className="col" key={item._id}>
+                                <Card className="p-3 shadow-sm border-0" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}>
+                                    <Card.Body>
+                                        <Card.Title className="fw-bold text-primary">
+                                            Appointment #{idx + 1}
+                                        </Card.Title>
+                                        <p><strong>Student:</strong> {item.StudentId?.AliasId || 'N/A'}</p>
+                                        <p><strong>Day & Date:</strong> {formatFullDateWithDay(item.SlotDate)}</p>
+                                        <p><strong>Start Time:</strong> {item.SlotStartTime}</p>
+                                        <p><strong>End Time:</strong> {item.SlotEndTime}</p>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold">Status</Form.Label>
+                                            <Form.Select
+                                                size="sm"
+                                                value={item.Status || 'pending'}
+                                                onChange={(e) => handleStatusChange(item._id, e.target.value)}
+                                                disabled={updatingId === item._id}
+                                            >
+                                                <option value="pending" disabled>pending</option>
+                                                {statusOptions.map((s) => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Card.Body>
+                                </Card>
                             </div>
-                        ) : (
-                            <CustomTable
-                                columns={columns}
-                                data={appointments}
-                                rowKey={(item) => item._id}
-                            />
-                        )}
-                    </Card>
-                </Container>
-            </div>
-
-            <Footer />
-        </>
+                        ))}
+                    </div>
+                )}
+            </Card>
+        </Container>
     );
 };
 

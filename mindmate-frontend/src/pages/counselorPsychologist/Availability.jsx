@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
-import CouncPsychHome from '../../components/CouncPsychHome'
 import { toast } from 'react-toastify';
 import { Container, Card, Spinner, Button, Row, Col, Form, Badge } from 'react-bootstrap';
 
@@ -97,112 +96,100 @@ const Availability = () => {
     ];
 
     return (
-        <>
-            <div
-                style={{
-                    background: 'linear-gradient(to right, #a18cd1, #00e3ae)',
-                    minHeight: '100vh',
-                }}
-            >
-                <Container style={{ maxWidth: '1100px', paddingTop: '40px' }}>
+        <Container>
+            <Card className="p-4 shadow-lg rounded-4">
+                <h4 className="fw-bold text-dark text-center mb-4">Manage Availability</h4>
 
-                    <CouncPsychHome />
+                {loading ? (
+                    <div className="text-center"><Spinner animation="border" /></div>
+                ) : (
+                    <CustomTable
+                        columns={columns}
+                        data={slots}
+                        rowKey={(_, idx) => idx}
+                        actions={[
+                            {
+                                label: 'Delete',
+                                variant: 'danger',
+                                onClick: (_, idx) => handleDeleteSlot(idx),
+                            },
+                        ]}
+                    />
+                )}
 
-                    <Card className="p-4 shadow-lg rounded-4">
-                        <h4 className="fw-bold text-dark text-center mb-4">Manage Availability</h4>
+                <hr className="my-4" />
+                <h5 className="fw-semibold text-primary">Add Slot</h5>
 
-                        {loading ? (
-                            <div className="text-center"><Spinner animation="border" /></div>
-                        ) : (
-                            <CustomTable
-                                columns={columns}
-                                data={slots}
-                                rowKey={(_, idx) => idx}
-                                actions={[
-                                    {
-                                        label: 'Delete',
-                                        variant: 'danger',
-                                        onClick: (_, idx) => handleDeleteSlot(idx),
-                                    },
-                                ]}
-                            />
-                        )}
+                <Row className="mb-3">
+                    <Col md={4}>
+                        <Form.Group>
+                            <Form.Select
+                                value={selectedDay}
+                                onChange={(e) => setSelectedDay(e.target.value)}
+                            >
+                                <option value="">Select Day</option>
+                                {daysOfWeek.map((d) => (
+                                    <option key={d} value={d}>
+                                        {d}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    </Col>
+                </Row>
 
-                        <hr className="my-4" />
-                        <h5 className="fw-semibold text-primary">Add Slot</h5>
+                {selectedDay && (
+                    <>
+                        <h6 className="mt-2 mb-2">Select Time Slots</h6>
 
-                        <Row className="mb-3">
-                            <Col md={4}>
-                                <Form.Group>
-                                    <Form.Select
-                                        value={selectedDay}
-                                        onChange={(e) => setSelectedDay(e.target.value)}
+                        {/* Color Legend */}
+                        <div className="mb-2 d-flex gap-3">
+                            <Badge bg="outline-danger" text="dark">Available</Badge>
+                            <Badge bg="success">Selected</Badge>
+                            <Badge bg="warning" text="dark">Already Saved</Badge>
+                        </div>
+
+                        <div className="d-flex flex-wrap gap-2 mb-3">
+                            {hours.map((hour, idx) => {
+                                const isAlreadySaved = slots.some(
+                                    (t) =>
+                                        t.Day === selectedDay &&
+                                        t.StartTime === hour.StartTime &&
+                                        t.EndTime === hour.EndTime
+                                );
+
+                                const isSelectedNow = selectedTimes.some(
+                                    (t) => t.StartTime === hour.StartTime && t.EndTime === hour.EndTime
+                                );
+
+                                const variant = isAlreadySaved
+                                    ? 'warning'
+                                    : isSelectedNow
+                                        ? 'success'
+                                        : 'outline-danger';
+
+                                return (
+                                    <Button
+                                        key={idx}
+                                        size="sm"
+                                        variant={variant}
+                                        disabled={isAlreadySaved}
+                                        onClick={() => !isAlreadySaved && handleToggleTime(hour)}
                                     >
-                                        <option value="">Select Day</option>
-                                        {daysOfWeek.map((d) => (
-                                            <option key={d} value={d}>
-                                                {d}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-
-                        {selectedDay && (
-                            <>
-                                <h6 className="mt-2 mb-2">Select Time Slots</h6>
-
-                                {/* 🟡 Color Legend */}
-                                <div className="mb-2 d-flex gap-3">
-                                    <Badge bg="outline-danger" text="dark">Available</Badge>
-                                    <Badge bg="success">Selected</Badge>
-                                    <Badge bg="warning" text="dark">Already Saved</Badge>
-                                </div>
-
-                                <div className="d-flex flex-wrap gap-2 mb-3">
-                                    {hours.map((hour, idx) => {
-                                        const isAlreadySaved = slots.some(
-                                            (t) =>
-                                                t.Day === selectedDay &&
-                                                t.StartTime === hour.StartTime &&
-                                                t.EndTime === hour.EndTime
-                                        );
-
-                                        const isSelectedNow = selectedTimes.some(
-                                            (t) => t.StartTime === hour.StartTime && t.EndTime === hour.EndTime
-                                        );
-
-                                        const variant = isAlreadySaved
-                                            ? 'warning'
-                                            : isSelectedNow
-                                                ? 'success'
-                                                : 'outline-danger';
-
-                                        return (
-                                            <Button
-                                                key={idx}
-                                                size="sm"
-                                                variant={variant}
-                                                disabled={isAlreadySaved}
-                                                onClick={() => !isAlreadySaved && handleToggleTime(hour)}
-                                            >
-                                                {hour.label}
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="text-end">
-                                    <Button variant="success" onClick={handleSubmit}>
-                                        Save Slot
+                                        {hour.label}
                                     </Button>
-                                </div>
-                            </>
-                        )}
-                    </Card>
-                </Container>
-            </div>
-        </>
+                                );
+                            })}
+                        </div>
+                        <div className="text-end">
+                            <Button variant="success" onClick={handleSubmit}>
+                                Save Slot
+                            </Button>
+                        </div>
+                    </>
+                )}
+            </Card>
+        </Container>
     );
 };
 

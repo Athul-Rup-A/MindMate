@@ -4,7 +4,6 @@ import { Formik, Field, Form as FormikForm, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from '../../config/axios';
 import CustomTable from '../../components/CustomTable';
-import CouncPsychHome from '../../components/CouncPsychHome';
 import { toast } from 'react-toastify';
 
 const allowedTypes = ['video', 'article', 'podcast', 'guide'];
@@ -110,119 +109,107 @@ const Resource = () => {
     ];
 
     return (
-        <div
-            style={{
-                background: 'linear-gradient(to right, #a1c4fd, #c2e9fb)',
-                minHeight: '100vh',
-                paddingTop: '30px',
-                paddingBottom: '30px'
-            }}
-        >
-            <Container style={{ maxWidth: '1300px' }}>
-                <CouncPsychHome />
+        <Container>
+            <Card className="p-4 shadow-lg rounded-4 mb-4">
+                <h3 className="text-center fw-bold text-primary mb-1">Manage Resources</h3>
 
-                <Card className="p-4 shadow-lg rounded-4 mb-4">
-                    <h3 className="text-center fw-bold text-primary mb-1">Manage Resources</h3>
+                <div className="text-end mb-3">
+                    <Button onClick={() => { setShowModal(true); setEditingResource(null); }}>
+                        Add Resource
+                    </Button>
+                </div>
 
-                    <div className="text-end mb-3">
-                        <Button onClick={() => { setShowModal(true); setEditingResource(null); }}>
-                            Add Resource
-                        </Button>
-                    </div>
+                {loading ? (
+                    <div className="text-center"><Spinner animation="border" variant="primary" /></div>
+                ) : (
+                    <CustomTable
+                        columns={columns}
+                        data={resources}
+                        actions={actions}
+                        rowKey={(item) => item._id}
+                    />
+                )}
+            </Card>
 
-                    {loading ? (
-                        <div className="text-center"><Spinner animation="border" variant="primary" /></div>
-                    ) : (
-                        <CustomTable
-                            columns={columns}
-                            data={resources}
-                            actions={actions}
-                            rowKey={(item) => item._id}
-                        />
-                    )}
-                </Card>
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>{editingResource ? 'Edit Resource' : 'Add Resource'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Formik
+                        initialValues={{
+                            title: editingResource?.title || '',
+                            type: editingResource?.type || '',
+                            language: editingResource?.language || '',
+                            link: editingResource?.link || '',
+                            tags: editingResource?.tags || []
+                        }}
+                        validationSchema={validationSchema}
+                        onSubmit={handleSubmit}
+                    >
+                        {({ values, handleChange }) => (
+                            <FormikForm>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Title</Form.Label>
+                                    <Field name="title" as={Form.Control} placeholder="Enter title" />
+                                    <ErrorMessage name="title" component="div" className="text-danger small" />
+                                </Form.Group>
 
-                {/* Modal */}
-                <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-                    <Modal.Header closeButton>
-                        <Modal.Title>{editingResource ? 'Edit Resource' : 'Add Resource'}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Formik
-                            initialValues={{
-                                title: editingResource?.title || '',
-                                type: editingResource?.type || '',
-                                language: editingResource?.language || '',
-                                link: editingResource?.link || '',
-                                tags: editingResource?.tags || []
-                            }}
-                            validationSchema={validationSchema}
-                            onSubmit={handleSubmit}
-                        >
-                            {({ values, handleChange }) => (
-                                <FormikForm>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Title</Form.Label>
-                                        <Field name="title" as={Form.Control} placeholder="Enter title" />
-                                        <ErrorMessage name="title" component="div" className="text-danger small" />
-                                    </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Type</Form.Label>
+                                    <Field as="select" name="type" className="form-select">
+                                        <option value="">Select type</option>
+                                        {allowedTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                    </Field>
+                                    <ErrorMessage name="type" component="div" className="text-danger small" />
+                                </Form.Group>
 
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Type</Form.Label>
-                                        <Field as="select" name="type" className="form-select">
-                                            <option value="">Select type</option>
-                                            {allowedTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                                        </Field>
-                                        <ErrorMessage name="type" component="div" className="text-danger small" />
-                                    </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Language</Form.Label>
+                                    <Field as="select" name="language" className="form-select">
+                                        <option value="">Select language</option>
+                                        {allowedLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                                    </Field>
+                                    <ErrorMessage name="language" component="div" className="text-danger small" />
+                                </Form.Group>
 
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Language</Form.Label>
-                                        <Field as="select" name="language" className="form-select">
-                                            <option value="">Select language</option>
-                                            {allowedLanguages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                                        </Field>
-                                        <ErrorMessage name="language" component="div" className="text-danger small" />
-                                    </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Link</Form.Label>
+                                    <Field name="link" as={Form.Control} placeholder="Enter resource link" />
+                                    <ErrorMessage name="link" component="div" className="text-danger small" />
+                                </Form.Group>
 
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Link</Form.Label>
-                                        <Field name="link" as={Form.Control} placeholder="Enter resource link" />
-                                        <ErrorMessage name="link" component="div" className="text-danger small" />
-                                    </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Tags</Form.Label>
+                                    {allowedTags.map(tag => (
+                                        <Form.Check
+                                            key={tag}
+                                            type="checkbox"
+                                            label={tag}
+                                            value={tag}
+                                            checked={values.tags.includes(tag)}
+                                            onChange={e => {
+                                                const checked = e.target.checked;
+                                                const val = e.target.value;
+                                                const updatedTags = checked
+                                                    ? [...values.tags, val]
+                                                    : values.tags.filter(t => t !== val);
+                                                handleChange({ target: { name: 'tags', value: updatedTags } });
+                                            }}
+                                        />
+                                    ))}
+                                    <ErrorMessage name="tags" component="div" className="text-danger small" />
+                                </Form.Group>
 
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Tags</Form.Label>
-                                        {allowedTags.map(tag => (
-                                            <Form.Check
-                                                key={tag}
-                                                type="checkbox"
-                                                label={tag}
-                                                value={tag}
-                                                checked={values.tags.includes(tag)}
-                                                onChange={e => {
-                                                    const checked = e.target.checked;
-                                                    const val = e.target.value;
-                                                    const updatedTags = checked
-                                                        ? [...values.tags, val]
-                                                        : values.tags.filter(t => t !== val);
-                                                    handleChange({ target: { name: 'tags', value: updatedTags } });
-                                                }}
-                                            />
-                                        ))}
-                                        <ErrorMessage name="tags" component="div" className="text-danger small" />
-                                    </Form.Group>
-
-                                    <div className="text-end">
-                                        <Button type="submit">{editingResource ? 'Update' : 'Create'}</Button>
-                                    </div>
-                                </FormikForm>
-                            )}
-                        </Formik>
-                    </Modal.Body>
-                </Modal>
-            </Container>
-        </div>
+                                <div className="text-end">
+                                    <Button type="submit">{editingResource ? 'Update' : 'Create'}</Button>
+                                </div>
+                            </FormikForm>
+                        )}
+                    </Formik>
+                </Modal.Body>
+            </Modal>
+        </Container>
     );
 };
 
