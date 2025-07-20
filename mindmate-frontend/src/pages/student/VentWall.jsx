@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Card, Button, Form, Row, Col, Spinner } from 'react-bootstrap';
+import { Container, Card, Button, Form, Row, Col, Spinner, Modal } from 'react-bootstrap';
 import authHeader from '../../config/authHeader';
 import { Formik, Field, Form as FormikForm, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import getCurrentUserId from '../../config/getCurrentUserId';
-import GoHomeButton from '../../components/GoHomeButton';
+import ConfirmModal from '../../components/ConfirmModal'
 
 const VentWall = () => {
   const [vents, setVents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showMyVentsModal, setShowMyVentsModal] = useState(false);
+  const [myVents, setMyVents] = useState([]);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [ventToDelete, setVentToDelete] = useState(null);
+  const [isMyVentDelete, setIsMyVentDelete] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
   const currentUserId = getCurrentUserId();
-  const navigate = useNavigate();
 
   const fetchAllVents = async () => {
     try {
@@ -83,14 +85,17 @@ const VentWall = () => {
   });
 
   return (
-    <div style={{
-      background: 'linear-gradient(to right, #ffd6e0, #c1e1ff)',
-      minHeight: '100vh',
-      padding: '2rem 1rem'
-    }}>
-      <Container className="bg-white p-4 rounded shadow">
-
-        <GoHomeButton />
+    <>
+      <Container
+        className="position-relative"
+        style={{
+          background: 'transparent',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(4px)',
+          borderRadius: '20px',
+          padding: '2rem',
+          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+        }}>
 
         <h2 className="text-center mb-4">Anonymous Community Vent Wall</h2>
 
@@ -125,7 +130,16 @@ const VentWall = () => {
         </Formik>
 
         <hr className="my-4" />
-        <h4 className="mb-3">All Anonymous Vents</h4>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="mb-3">All Anonymous Vents</h4>
+          <Button variant="secondary" className='mb-3' onClick={() => {
+            const filtered = vents.filter(v => (v.StudentId?._id || v.StudentId) === currentUserId);
+            setMyVents(filtered);
+            setShowMyVentsModal(true);
+          }}>
+            View My Vents
+          </Button>
+        </div>
 
         {loading ? (
           <div className="text-center"><Spinner animation="border" /></div>
@@ -162,7 +176,11 @@ const VentWall = () => {
                       <Button
                         size="sm"
                         variant="outline-dark"
-                        onClick={() => handleDelete(vent._id)}
+                        onClick={() => {
+                          setVentToDelete(vent._id);
+                          setIsMyVentDelete(false);
+                          setShowConfirm(true);
+                        }}
                       >
                         ❌
                       </Button>
@@ -174,8 +192,64 @@ const VentWall = () => {
           ))
         )}
       </Container>
-      <ToastContainer position="top-right" autoClose={3000} />
-    </div>
+
+      <ConfirmModal
+        show={showConfirm}
+        onHide={() => setShowConfirm(false)}
+        onConfirm={async () => {
+          if (!ventToDelete) return;
+          await handleDelete(ventToDelete);
+
+          if (isMyVentDelete) {
+            setMyVents(prev => prev.filter(v => v._id !== ventToDelete));
+            setIsMyVentDelete(false);
+          }
+
+          setVentToDelete(null);
+          setShowConfirm(false);
+        }}
+        message="Are you sure you want to delete this vent?"
+        darkMode={isMyVentDelete}
+      />
+
+      <Modal show={showMyVentsModal} onHide={() => setShowMyVentsModal(false)} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>My Vents</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {myVents.length === 0 ? (
+            <p>You haven't posted any vents yet.</p>
+          ) : (
+            myVents.map((vent) => (
+              <Card key={vent._id} className="mb-3 shadow-sm border-0">
+                <Card.Body>
+                  <Card.Title className="text-capitalize">{vent.Topic}</Card.Title>
+                  <Card.Text>{vent.Content}</Card.Text>
+                  <div className="text-muted small">
+                    Posted on {new Date(vent.createdAt).toLocaleString()}
+                  </div>
+                  <div className="mt-2 text-end">
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      onClick={() => {
+                        // handleDelete(vent._id);
+                        // setMyVents(myVents.filter(v => v._id !== vent._id));
+                        setVentToDelete(vent._id);
+                        setIsMyVentDelete(true); // Set context
+                        setShowConfirm(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            ))
+          )}
+        </Modal.Body>
+      </Modal>
+    </>
   );
 };
 

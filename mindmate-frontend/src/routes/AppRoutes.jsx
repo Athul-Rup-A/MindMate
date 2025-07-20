@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/Protectedroute';
+import StudentLayout from '../Layout/StudentLayout';
 import CounselorPsychologistLayout from '../Layout/CounselorPsychologistLayout';
 import AdminLayout from '../Layout/AdminLayout';
 
@@ -42,6 +43,10 @@ import AdminAdmin from '../pages/admin/Admin'
 import AdminContent from '../pages/admin/Content'
 import AdminReport from '../pages/admin/Report'
 
+// Call Wrappers
+import CouncPsychoVideoCallWrapper from '../pages/CouncPsychoVideoCallWrapper';
+import StudentVideoCallWrapper from '../pages/StudentVideoCallWrapper';
+
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -52,8 +57,8 @@ const AppRoutes = () => (
       <Route path="/force-reset-password" element={<ForceResetPassword />} />
 
       {/* Student Public Routes */}
-      <Route path="/signup/student" element={<StudentSignup />} />
-      <Route path="/login/student" element={<Login />} />
+      <Route path="/student/signup" element={<StudentSignup />} />
+      <Route path="/student/login" element={<Login />} />
 
       {/* Counselor&Psychologist Public Routes */}
       <Route path="/counselorpsychologist/signup" element={<CounselorPsychologistSignup />} />
@@ -64,36 +69,39 @@ const AppRoutes = () => (
       <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* Student Protected Routes */}
-      <Route path="/profile" element={
-        <ProtectedRoute><Profile /></ProtectedRoute>
-      } />
-      <Route path="/appointments" element={
-        <ProtectedRoute><Appointment /></ProtectedRoute>
-      } />
-      <Route path="/appointments/:id" element={
-        <ProtectedRoute><Appointment /></ProtectedRoute>
-      } />
-      <Route path="/home" element={
-        <ProtectedRoute><StudentHome /></ProtectedRoute>
-      } />
-      <Route path="/ventwall" element={
-        <ProtectedRoute><VentWall /></ProtectedRoute>
-      } />
-      <Route path="/feedback" element={
-        <ProtectedRoute><Feedback /></ProtectedRoute>
-      } />
-      <Route path="/sos" element={
-        <ProtectedRoute><SOS /></ProtectedRoute>
-      } />
-      <Route path="/wellness" element={
-        <ProtectedRoute><Wellness /></ProtectedRoute>
-      } />
-      <Route path="/resource" element={
-        <ProtectedRoute><Resource /></ProtectedRoute>
-      } />
-      <Route path="/report" element={
-        <ProtectedRoute><Report /></ProtectedRoute>
-      } />
+      <Route path="student" element={<StudentLayout />}>
+
+        <Route path="profile" element={
+          <ProtectedRoute><Profile /></ProtectedRoute>
+        } />
+        <Route path="appointments" element={
+          <ProtectedRoute><Appointment /></ProtectedRoute>
+        } />
+        <Route path="appointments/:id" element={
+          <ProtectedRoute><Appointment /></ProtectedRoute>
+        } />
+        <Route path="home" element={
+          <ProtectedRoute><StudentHome /></ProtectedRoute>
+        } />
+        <Route path="ventwall" element={
+          <ProtectedRoute><VentWall /></ProtectedRoute>
+        } />
+        <Route path="feedback" element={
+          <ProtectedRoute><Feedback /></ProtectedRoute>
+        } />
+        <Route path="sos" element={
+          <ProtectedRoute><SOS /></ProtectedRoute>
+        } />
+        <Route path="wellness" element={
+          <ProtectedRoute><Wellness /></ProtectedRoute>
+        } />
+        <Route path="resource" element={
+          <ProtectedRoute><Resource /></ProtectedRoute>
+        } />
+        <Route path="report" element={
+          <ProtectedRoute><Report /></ProtectedRoute>
+        } />
+      </Route>
 
       {/* Counselor&Psychologist Protected Routes */}
       <Route path="counselorpsychologist" element={<CounselorPsychologistLayout />}>
@@ -154,6 +162,10 @@ const AppRoutes = () => (
           <ProtectedRoute><AdminReport /></ProtectedRoute>
         } />
       </Route>
+
+      {/* Call Routes */}
+      <Route path="/video/counselor/:myId/:targetId" element={<CouncPsychoVideoCallWrapper />} />
+      <Route path="/video/student/:studentId" element={<StudentVideoCallWrapper />} />
 
     </Routes>
   </BrowserRouter>

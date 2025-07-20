@@ -1,18 +1,15 @@
 const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
+
+const sendEmail = require('../../utils/autoEmail')
+const sendSMS = require('../../utils/sendSMS');
 
 const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Appointment = require('../../models/Appointment');
 const Feedback = require('../../models/Feedback');
 const SOSLog = require('../../models/SOSLog');
 const Student = require('../../models/Student')
-
-const sendEmail = require('../../utils/autoEmail')
-const sendSMS = (phone, message) => {
-    console.log(`Sending SMS to ${phone}: ${message}`);
-};
 
 // Validation regex
 const regex = {
@@ -389,9 +386,36 @@ const CounselorPsychologistController = {
                 MoodEntries: 1,
                 HabitLogs: 1,
                 createdAt: 1
-            });
+            }
+        ).sort({ createdAt: -1 });
 
         res.json(students);
+    }),
+
+    getStudentInfo: asyncHandler(async (req, res) => {
+        const student = await Student.findById(req.params.id).select('AliasId');
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+        res.json(student);
+    }),
+
+    getMyStudents: asyncHandler(async (req, res) => {
+        const counselorPsychologistId = req.user._id;
+
+        const appointments = await Appointment.find({ CounselorPsychologistId: counselorPsychologistId })
+            .populate('StudentId', 'AliasId')
+            .lean();
+
+        const seen = new Set();
+        const uniqueStudents = [];
+
+        for (const appt of appointments) {
+            const student = appt.StudentId;
+            if (student && !seen.has(student._id.toString())) {
+                seen.add(student._id.toString());
+                uniqueStudents.push(student);
+            }
+        }
+        res.status(200).json(uniqueStudents);
     }),
 
 };

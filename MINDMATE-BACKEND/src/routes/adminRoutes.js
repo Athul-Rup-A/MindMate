@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
-
 const auth = require('../middlewares/authMiddleware');
 const permitRoles = require('../middlewares/roleMiddleware');
 const AdminController = require('../controllers/admin/adminController');
+
+const router = express.Router();
 
 // Only admin and moderator can access this
 const AdminModeAuth = [auth, permitRoles('admin', 'moderator')];

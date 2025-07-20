@@ -16,7 +16,7 @@ const ProfileSchema = Yup.object().shape({
 const PasswordSchema = Yup.object().shape({
     currentPassword: Yup.string().required('Current password is required'),
     newPassword: Yup.string()
-        .matches(/^(?=.*[A-Za-z])(?=.*\d).{10,}$/, 'Minimum 10 characters, one letter and one number, alphanumeric only')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d).{10,}$/, 'Minimum 10 characters with atleast one letter and one number, alphanumeric only')
         .required('New password is required'),
 });
 

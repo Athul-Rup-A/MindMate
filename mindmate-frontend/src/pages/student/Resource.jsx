@@ -5,8 +5,6 @@ import { toast } from 'react-toastify';
 import { Formik, Field } from 'formik';
 import * as Yup from 'yup';
 import authHeader from '../../config/authHeader';
-import { useNavigate } from 'react-router-dom';
-import GoHomeButton from '../../components/GoHomeButton';
 
 const BASE_URL = 'http://localhost:5000/api/students';
 
@@ -21,7 +19,6 @@ const Resource = () => {
     const [selectedType, setSelectedType] = useState('');
     const [selected, setSelected] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const navigate = useNavigate();
 
     const fetchResources = async () => {
         try {
@@ -65,17 +62,8 @@ const Resource = () => {
     }, []);
 
     return (
-        <div
-            style={{
-                background: 'linear-gradient(to right, #87CEEB, #001F54)',
-                minHeight: '100vh',
-                padding: '2rem',
-            }}
-        >
+        <>
             <Container>
-
-                <GoHomeButton variant='outline-light' />
-
                 <h2 className="text-center text-white mb-4">Mental Health Resources</h2>
 
                 <Formik
@@ -144,7 +132,6 @@ const Resource = () => {
                     )}
                 </Row>
 
-                {/* Modal */}
                 <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                     <Modal.Header closeButton>
                         <Modal.Title>{selected?.title}</Modal.Title>
@@ -159,7 +146,7 @@ const Resource = () => {
                     </Modal.Body>
                 </Modal>
             </Container>
-        </div>
+        </>
     );
 };
 

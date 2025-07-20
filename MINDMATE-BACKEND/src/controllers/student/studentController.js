@@ -4,10 +4,9 @@ const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
 const sendEmail = require('../../utils/autoEmail')
-// Simulated SMS sending function
-const sendSMS = (phone, message) => {
-  console.log(`Sending SMS to ${phone}: ${message}`);
-};
+const sendSMS = require('../../utils/sendSMS');
+const makeCall = require('../../utils/makeCall');
+const sendAppNotification = require('../../utils/sendAppNotification');
 
 const Student = require('../../models/Student');
 const Appointment = require('../../models/Appointment');
@@ -32,7 +31,7 @@ const studentController = {
       return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
     }
     // Password strength: at least 8 characters, with at least 1 letter and 1 number
-    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
       return res.status(400).json({
         message: 'Password must be at least 8 characters long and contain at least one letter and one number',
       });
@@ -212,6 +211,32 @@ const studentController = {
     res.status(200).json(counselorPsychologist);
   }),
 
+  getCounselorPsychologistById: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const user = await CounselorPsychologist.findById(id).select('FullName AliasId Specialization');
+    if (!user) {
+      return res.status(404).json({ message: 'Counselor/Psychologist not found' });
+    }
+
+    res.status(200).json(user);
+  }),
+
+  getMyAppointmentCounselorPsychologists: asyncHandler(async (req, res) => {
+    const studentId = req.user._id;
+
+    const counselorPsychologistIds = await Appointment.find({ StudentId: studentId })
+      .distinct('CounselorPsychologistId');
+
+    const counselorPsychologists = await CounselorPsychologist.find({
+      _id: { $in: counselorPsychologistIds },
+      ApprovedByAdmin: true,
+      Status: 'active',
+    }).select('_id FullName Role Specialization');
+
+    res.status(200).json(counselorPsychologists);
+  }),
+
   // PROFILE
   getProfile: asyncHandler(async (req, res) => {
     const profile = await Student.findById(req.user._id)
@@ -251,7 +276,7 @@ const studentController = {
     }
 
     // Password strength for new password
-    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
       return res.status(400).json({
         message: 'New password must be at least 8 characters long and include at least one letter and one number',
       });
@@ -273,7 +298,7 @@ const studentController = {
 
   updateProfile: asyncHandler(async (req, res) => {
     const updates = req.body;
-    const allowedFields = ['Phone', 'Status'];
+    const allowedFields = ['Phone', 'Email'];
     const updateKeys = Object.keys(updates);
 
     // Check for invalid fields
@@ -287,9 +312,10 @@ const studentController = {
       return res.status(400).json({ message: 'Phone must be a valid phone number' });
     }
 
-    // Validate Status (if present)
-    if (updates.Status && !['active', 'pending', 'banned'].includes(updates.Status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
+    // Validate Email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (updates.Email && !emailRegex.test(updates.Email)) {
+      return res.Email(400).json({ message: 'Invalid email value' });
     }
 
     const updated = await Student.findByIdAndUpdate(req.user._id, updates, {
@@ -742,7 +768,22 @@ const studentController = {
       TriggeredAt: new Date(),
     });
 
-    res.status(201).json(sos);
+    const recipients = await CounselorPsychologist.find({ _id: { $in: AlertedTo } });
+
+    for (const { _id, Phone } of recipients) {
+      const formattedPhone = Phone.startsWith('+') ? Phone : `+91${Phone.trim()}`;
+      const message = `🚨 SOS Alert: A student has triggered an SOS via ${Method.toUpperCase()}. Please respond immediately.`;
+
+      if (Method === 'sms') {
+        await sendSMS(formattedPhone, message);
+      } else if (Method === 'call') {
+        await makeCall(formattedPhone);
+      } else if (Method === 'app') {
+        await sendAppNotification(_id, message);
+      }
+    };
+
+    res.status(201).json({ message: 'SOS triggered and delivered', sos });
   }),
 
   getAllApprovedCounselorPsychologist: asyncHandler(async (req, res) => {
@@ -800,30 +841,49 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    const moodEntry = {
-      Date: dateString ? new Date(dateString) : new Date(),
-      Mood,
-      Note,
-      Tags,
-    };
+    const student = await Student.findById(req.user._id);
 
-    const updatedStudent = await Student.findByIdAndUpdate(
-      req.user._id,
-      { $push: { MoodEntries: moodEntry } },
-      { new: true }
-    );
+    const moodDate = new Date(dateString || new Date());
+    const existingIndex = student.MoodEntries.findIndex(entry => {
+      const existingDate = new Date(entry.Date);
+      return (
+        existingDate.getFullYear() === moodDate.getFullYear() &&
+        existingDate.getMonth() === moodDate.getMonth() &&
+        existingDate.getDate() === moodDate.getDate()
+      );
+    });
 
-    res.status(201).json(updatedStudent.MoodEntries);
+    if (existingIndex !== -1) {
+      // Replace existing entry
+      student.MoodEntries[existingIndex] = {
+        ...student.MoodEntries[existingIndex],
+        Mood,
+        Note,
+        Tags,
+        Date: moodDate
+      };
+    } else {
+      // Add new entry
+      student.MoodEntries.push({
+        _id: new mongoose.Types.ObjectId(),
+        Date: moodDate,
+        Mood,
+        Note,
+        Tags
+      });
+    }
+
+    await student.save();
+    res.status(201).json(student.MoodEntries);
   }),
 
   getMoodEntries: asyncHandler(async (req, res) => {
-    const student = await Student.findById(req.user._id);
+    const student = await Student.findById(req.user._id).lean();
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Sort mood entries by date (newest first)
     const sortedMoods = [...student.MoodEntries].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
     res.status(200).json(sortedMoods);
@@ -902,35 +962,50 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid values provided' });
     }
 
+    const student = await Student.findById(req.user._id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingIndex = student.HabitLogs.findIndex(log => {
+      const logDate = new Date(log.Date);
+      logDate.setHours(0, 0, 0, 0);
+      return logDate.getTime() === today.getTime();
+    });
+
     const habitLog = {
-      Date: Date.now(),
+      Date: today,
       Exercise: Exercise ?? false,
       Hydration: Hydration ?? 0,
       ScreenTime: ScreenTime ?? 0,
       SleepHours: SleepHours ?? 0,
     };
 
-    const updatedStudent = await Student.findByIdAndUpdate(
-      req.user._id,
-      { $push: { HabitLogs: habitLog } },
-      { new: true }
-    );
-
-    if (!updatedStudent) {
-      return res.status(404).json({ message: 'Student not found' });
+    if (existingIndex !== -1) {
+      // Update existing habit log for today
+      student.HabitLogs[existingIndex] = habitLog;
+    } else {
+      // Add new habit log for today
+      student.HabitLogs.push(habitLog);
     }
 
-    res.status(201).json(updatedStudent.HabitLogs);
+    await student.save();
+    res.status(201).json(student.HabitLogs);
   }),
 
   getHabitLogs: asyncHandler(async (req, res) => {
-    const student = await Student.findById(req.user._id);
+    const student = await Student.findById(req.user._id).lean();
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    res.status(200).json(student.HabitLogs);
+    const sortedHabits = [...student.HabitLogs].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+    res.status(200).json(sortedHabits);
   }),
 
   updateHabitLog: asyncHandler(async (req, res) => {

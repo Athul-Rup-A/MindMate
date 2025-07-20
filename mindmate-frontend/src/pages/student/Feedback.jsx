@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Button, Form, Table, Modal, Spinner } from 'react-bootstrap';
+import { Container, Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import authHeader from '../../config/authHeader';
 import CustomTable from '../../components/CustomTable'
-import GoHomeButton from '../../components/GoHomeButton';
 
 const Feedback = () => {
     const [feedbacks, setFeedbacks] = useState([]);
@@ -45,6 +43,23 @@ const Feedback = () => {
 
         fetchFeedbacks();
     }, []);
+
+    const getSessionOptions = (appointments) => {
+        return appointments.map((app) => {
+            let labelStatus = 'Awaiting';
+            if (app.Status === 'cancelled') labelStatus = 'Cancelled';
+            else if (app.Status === 'confirmed') labelStatus = 'Upcoming';
+            else if (app.Status === 'completed') labelStatus = 'Completed';
+
+            return {
+                value: app.CounselorPsychologistId?._id,
+                label: `${app.CounselorPsychologistId?.FullName || 'Unknown'}
+                – ${new Date(app.SlotDate).toLocaleDateString()}
+                (${app.SlotStartTime} - ${app.SlotEndTime}) [${labelStatus}]`,
+                isDisabled: app.Status !== 'completed',
+            };
+        });
+    };
 
     const feedbackSchema = Yup.object().shape({
         Type: Yup.string()
@@ -103,16 +118,16 @@ const Feedback = () => {
 
     return (
         <Container
-            className="py-5 position-relative mt-4"
+            className="position-relative"
             style={{
-                background: 'linear-gradient(to right, #e0f7fa, #fce4ec)',
+                background: 'transparent',
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                backdropFilter: 'blur(4px)',
                 borderRadius: '20px',
                 padding: '2rem',
                 boxShadow: '0 0 10px rgba(0,0,0,0.1)',
             }}
         >
-            <GoHomeButton />
-
             <h3 className="text-center">Submit Feedback</h3>
             <Formik
                 initialValues={{
@@ -172,28 +187,11 @@ const Feedback = () => {
                                 disabled={values.Type !== 'session'} // Conditionally disable here
                             >
                                 <option value="">Select a session</option>
-                                {appointments.map((app) => {
-                                    const sessionEnd = new Date(`${app.SlotDate} ${app.SlotEndTime}`);
-                                    const isPast = sessionEnd < new Date();
-
-                                    const label = isPast
-                                        ? 'Completed'
-                                        : app.Status === 'cancelled'
-                                            ? 'Cancelled'
-                                            : 'Awaiting';
-
-                                    return (
-                                        <option
-                                            key={app._id}
-                                            value={isPast ? app.CounselorPsychologistId?._id : ''}
-                                            disabled={!isPast}
-                                        >
-                                            {app.CounselorPsychologistId?.FullName || 'Unknown'} –{" "}
-                                            {new Date(app.SlotDate).toLocaleDateString()} ({app.SlotStartTime} -{" "}
-                                            {app.SlotEndTime}) [{label}]
-                                        </option>
-                                    );
-                                })}
+                                {getSessionOptions(appointments).map((opt, idx) => (
+                                    <option key={idx} value={opt.value} disabled={opt.isDisabled}>
+                                        {opt.label}
+                                    </option>
+                                ))}
                             </Field>
                             <ErrorMessage
                                 name="CounselorPsychologistId"
@@ -224,14 +222,14 @@ const Feedback = () => {
                             accessor: (item) =>
                                 item.Type === 'session'
                                     ? item.CounselorPsychologistId?.FullName || 'No counselor name'
-                                    : '-',
+                                    : 'N/A',
                         },
                         {
                             header: 'Date',
                             accessor: (item) =>
                                 item.Type === 'session' && item.AppointmentId?.SlotDate
                                     ? new Date(item.AppointmentId.SlotDate).toLocaleDateString()
-                                    : '-',
+                                    : 'N/A',
                         },
                         { header: 'Rating', accessor: 'Rating' },
                         { header: 'Type', accessor: 'Type' },
@@ -300,7 +298,6 @@ const Feedback = () => {
                     </Formik>
                 </Modal.Body>
             </Modal>
-            <ToastContainer position="top-right" autoClose={3000} />
         </Container>
     );
 };

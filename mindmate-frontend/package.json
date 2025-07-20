@@ -10,10 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.6",
+    "buffer": "^6.0.3",
     "date-fns": "^4.1.0",
+    "events": "^3.3.0",
     "formik": "^2.4.6",
+    "peer": "^1.0.2",
+    "process": "^0.11.10",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-icons": "^1.11.6",
@@ -23,9 +28,14 @@
     "react-router-dom": "^7.6.2",
     "react-select": "^5.10.1",
     "react-toastify": "^11.0.5",
+    "simple-peer": "^9.11.1",
+    "socket.io-client": "^4.8.1",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5",
     "yup": "^1.6.1"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@eslint/js": "^9.25.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
@@ -36,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.6",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "tailwindcss": "^4.1.10",
     "vite": "^6.3.5"
   }

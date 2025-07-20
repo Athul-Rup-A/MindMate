@@ -20,7 +20,7 @@ const Welcome = () => {
                         🌿 MindMate
                     </Navbar.Brand>
                     <Nav className="ms-auto">
-                        <Nav.Link as={Link} to="/login/student" className="fw-semibold">
+                        <Nav.Link as={Link} to="/student/login" className="fw-semibold">
                             Student Login
                         </Nav.Link>
                         <Nav.Link as={Link} to="/counselorpsychologist/login" className="fw-semibold">
@@ -48,9 +48,10 @@ const Welcome = () => {
                                 share your thoughts anonymously, access wellness tools, and take charge of your mental wellbeing
                                 — all in one compassionate platform.
                             </p>
+                            <p className='m-0 mt-2'>"You’re Not Alone!"</p>
 
                             <div className="mt-4 d-flex justify-content-center gap-3 flex-wrap">
-                                <Button as={Link} to="/signup/student" variant="primary" size="lg">
+                                <Button as={Link} to="/student/signup" variant="primary" size="lg">
                                     Join as Student
                                 </Button>
                                 <Button as={Link} to="counselorpsychologist/signup/" variant="success" size="lg">

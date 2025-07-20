@@ -36,9 +36,6 @@ const resourceController = {
             return res.status(400).json({ error: 'One or more tags are invalid.' });
         }
 
-        console.log('Request by:', req.userId);
-
-
         const resource = new Resource({
             title,
             type,

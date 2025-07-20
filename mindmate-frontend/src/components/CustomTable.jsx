@@ -36,7 +36,13 @@ const CustomTable = ({ columns, data, actions, renderExpandedRow, rowKey }) => {
                             size="sm"
                             variant={action.variant || 'primary'}
                             className="px-3"
-                            onClick={() => action.onClick(item, idx)}
+                            disabled={typeof action.disabled === 'function' ? action.disabled(item, idx) : false}
+                            onClick={() => {
+                              const isDisabled = typeof action.disabled === 'function' ? action.disabled(item, idx) : false;
+                              if (!isDisabled) {
+                                action.onClick(item, idx);
+                              }
+                            }}
                           >
                             {action.label}
                           </Button>

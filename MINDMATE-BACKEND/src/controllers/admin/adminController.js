@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
+const sendEmail = require('../../utils/autoEmail')
+const sendSMS = require('../../utils/sendSMS');
+const generateTempPassword = require('../../utils/tempPassGen')
+
 const Admin = require('../../models/Admin');
 const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Feedback = require('../../models/Feedback');
@@ -10,12 +14,6 @@ const Resource = require('../../models/Resource');
 const SOS = require('../../models/SOSLog')
 const Student = require('../../models/Student')
 const Vent = require('../../models/VentWall');
-
-const generateTempPassword = require('../../utils/tempPassGen')
-const sendEmail = require('../../utils/autoEmail');
-const sendSMS = (phone, message) => {
-  console.log(`Sending SMS to ${phone}: ${message}`);
-};
 
 const regex = {
   aliasId: /^[a-zA-Z0-9_]{4,20}$/,

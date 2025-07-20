@@ -64,13 +64,16 @@ const AdminNavbar = () => {
             </div>
 
             <div className="d-none d-md-flex gap-3 ms-auto">
-                <Button variant="" size="sm"
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
                     style={location.pathname === '/admin/stat' ? { borderBottom: '2px solid black' } : {}}
                     onClick={() => navigate('/admin/stat')}>Home</Button>
-                <Button variant="" size="sm"
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
                     style={location.pathname === '/admin/profile' ? { borderBottom: '2px solid black' } : {}}
                     onClick={() => navigate('/admin/profile')}>Profile</Button>
-                <Button variant="" size="sm"
+                <Button variant="link" size="sm"
+                    className='text-decoration-none text-dark'
                     style={location.pathname === '/admin/approval' ? { borderBottom: '2px solid black' } : {}}
                     onClick={() => navigate('/admin/approval')}>Manage Approvals</Button>
                 <Button variant="dark" size="sm" onClick={() => setShowMenu(true)}>
@@ -103,6 +106,7 @@ const AdminNavbar = () => {
                             navigate('/admin/approval');
                             setShowMenu(false);
                         }}>Manage Approvals</Button>
+
                     <Button variant={location.pathname === '/admin/adminmanage' ? 'light' : 'outline-dark'}
                         onClick={() => {
                             navigate('/admin/adminmanage');

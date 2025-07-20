@@ -5,8 +5,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Container, Form, Button, InputGroup, OverlayTrigger, Tooltip, Card } from 'react-bootstrap';
 import { EyeFill, EyeSlashFill, InfoCircle, PersonFill, TelephoneFill, LockFill } from 'react-bootstrap-icons';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,7 +14,9 @@ const Signup = () => {
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
   const SignupSchema = Yup.object().shape({
-    AliasId: Yup.string().required('Alias ID is required'),
+    AliasId: Yup.string()
+      .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+      .required('Alias ID is required'),
     email: Yup.string()
       .email('Enter a valid email address')
       .required('Email is required'),
@@ -23,10 +24,9 @@ const Signup = () => {
       .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian phone number')
       .required('Phone is required'),
     password: Yup.string()
-      .matches(
-        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
-        'At least 8 characters, including 1 letter & 1 number'
-      )
+      .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
+      .matches(/[A-Za-z]/, 'At least one letter required')
+      .matches(/[0-9]/, 'At least one number required')
       .required('Password is required'),
   });
 
@@ -34,7 +34,7 @@ const Signup = () => {
     try {
       await axios.post(`${BASE_URL}/signup`, values);
       toast.success('Signup successful! You can now log in.');
-      setTimeout(() => navigate('/login/student'), 3700);
+      setTimeout(() => navigate('/student/login'), 3700);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -45,23 +45,27 @@ const Signup = () => {
   return (
     <div
       style={{
-        background: 'linear-gradient(to right, #89f7fe,rgb(137, 62, 202))',
+        background: 'url("/blue.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'Segoe UI, sans-serif',
+        padding: '40px 0',
       }}
     >
-      <Container style={{ maxWidth: '500px' }}>
+      <Container style={{ maxWidth: '600px' }}>
         <Card
-          className="p-4 shadow-lg"
+          className="p-4 shadow-lg rounded-4"
           style={{
-            borderRadius: '20px',
-            backgroundColor: 'white',
+            background: 'transparent',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
           }}
         >
-          <h3 className="text-center mb-1 fw-bold text-primary">Join MindMate</h3>
+          <h3 className="text-center mb-1 fw-bold text-dark">Join MindMate</h3>
           <p className="text-center text-muted mb-4">
             Your safe, anonymous space for self-care 🌿
           </p>
@@ -173,7 +177,7 @@ const Signup = () => {
 
                 <Button
                   type="submit"
-                  variant="primary"
+                  variant="dark"
                   className="w-100 mt-3 fw-semibold"
                   disabled={isSubmitting}
                 >
@@ -183,8 +187,8 @@ const Signup = () => {
                 <div className="text-center mt-3">
                   <Button
                     variant="link"
-                    className="text-decoration-none"
-                    onClick={() => navigate('/login/student')}
+                    className="text-decoration-none text-dark"
+                    onClick={() => navigate('/student/login')}
                   >
                     Already have an account?
                   </Button>
@@ -195,7 +199,6 @@ const Signup = () => {
         </Card>
       </Container>
 
-      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

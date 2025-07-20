@@ -1,10 +1,10 @@
 const express = require('express');
-const router = express.Router();
-
 const auth = require('../middlewares/authMiddleware');
 const permitRoles = require('../middlewares/roleMiddleware');
 const CounselorPsychologistController = require('../controllers/counselorPsychologist/counselorPsychologistController');
 const resourceController = require('../controllers/counselorPsychologist/resourceController')
+
+const router = express.Router();
 
 // Only counselor and psychologist can access this
 const CouncPsychoAuth = [auth, permitRoles('counselor', 'psychologist')];
@@ -44,5 +44,9 @@ router.post('/resources', CouncPsychoAuth, resourceController.createResource);
 router.get('/resources', CouncPsychoAuth, resourceController.getOwnResources);
 router.put('/resources/:id', CouncPsychoAuth, resourceController.updateResource);
 router.delete('/resources/:id', CouncPsychoAuth, resourceController.deleteResource);
+
+// Student-Section
+router.get('/students/:id', CouncPsychoAuth, CounselorPsychologistController.getStudentInfo);
+router.get('/my-students', CouncPsychoAuth, CounselorPsychologistController.getMyStudents);
 
 module.exports = router;

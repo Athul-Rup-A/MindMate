@@ -1,23 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Form, Row, Col, Button, Table } from 'react-bootstrap';
+import { Container, Form, Row, Col, Button } from 'react-bootstrap';
 import { Formik, Field, Form as FormikForm, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import authHeader from '../../config/authHeader';
 import getCurrentUserId from '../../config/getCurrentUserId';
-import { useNavigate } from 'react-router-dom';
 import CustomTable from '../../components/CustomTable';
 import Select from 'react-select'
-import GoHomeButton from '../../components/GoHomeButton'
 
 const Report = () => {
   const [targetList, setTargetList] = useState([]);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [myReports, setMyReports] = useState([]);
   const currentUserId = getCurrentUserId();
-  const navigate = useNavigate();
 
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
@@ -179,16 +175,16 @@ const Report = () => {
 
   return (
     <Container
-      fluid
-      className="py-5"
+      className="position-relative"
       style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to right,rgb(110, 139, 188),rgb(96, 196, 111))',
-        padding: '2rem',
+        background: 'transparent',
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        backdropFilter: 'blur(4px)',
         borderRadius: '20px',
+        padding: '2rem',
+        boxShadow: '0 0 10px rgba(0,0,0,0.1)',
       }}
     >
-      <GoHomeButton />
 
       <h3 className='text-center mb-4'>Anonymous Report Center</h3>
       <Formik
@@ -340,13 +336,13 @@ const Report = () => {
                 }
               },
               condition: (report) => report.ReporterId === currentUserId,
+              disabled: (report) => report.Status?.toLowerCase() === 'resolved',
             },
           ]}
           rowKey={(report) => `report-${report._id}`}
         />
       )}
 
-      <ToastContainer position="top-right" autoClose={3000} />
     </Container>
   );
 };

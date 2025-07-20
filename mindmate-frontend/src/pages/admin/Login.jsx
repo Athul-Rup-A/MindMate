@@ -118,7 +118,7 @@ const Login = () => {
                             ? phonePurpose === 'forgot-password'
                                 ? 'Reset Password'
                                 : 'Recover Alias ID'
-                            : 'MindMate Admin / Moderator Login'}
+                            : 'MindMate Admin/Moderator Login'}
                     </h3>
                     <p className="text-center text-muted mb-4">
                         {showPhone

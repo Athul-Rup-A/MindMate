@@ -35,11 +35,6 @@ const StudentSchema = new Schema({
   Email: { type: String, required: true, unique: true },
   Role: { type: String, enum: ['student'], default: 'student' },
   VentPosts: [{ type: Schema.Types.ObjectId, ref: 'VentWall' }],
-  Status: {
-    type: String,
-    enum: ['active', 'pending', 'banned'],
-    default: 'pending'
-  },
   HabitLogs: [{
     Date: { type: Date, required: true },
     Exercise: { type: Boolean, default: false },

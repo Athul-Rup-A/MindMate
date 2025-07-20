@@ -1,13 +1,12 @@
 const express = require('express');
-const router = express.Router();
-
 const auth = require('../middlewares/authMiddleware');
 const permitRoles = require('../middlewares/roleMiddleware');
 const StudentController = require('../controllers/student/studentController');
 
+const router = express.Router();
+
 // Only student can access this
 const studentAuth = [auth, permitRoles('student')];
-
 
 // Auth
 router.post('/signup', StudentController.signupStudent);
@@ -16,8 +15,10 @@ router.post('/forgot-password', StudentController.forgotPasswordByPhone);
 router.post('/forgot-aliasid', StudentController.forgotAliasIdByPhone);
 router.put('/set-new-password', StudentController.setNewPassword);
 
-// CounselorPsychologist-Dash
+// CounselorPsychologist-Section
 router.get('/counselorPsychologist', studentAuth, StudentController.getAvailableCounselorPsychologist);
+router.get('/counselorPsychologist/:id', studentAuth, StudentController.getCounselorPsychologistById);
+router.get('/my-counselors', studentAuth, StudentController.getMyAppointmentCounselorPsychologists);
 
 // Profile
 router.get('/profile', studentAuth, StudentController.getProfile);

@@ -5,8 +5,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Container, Form, Button, InputGroup, OverlayTrigger, Tooltip, Card } from 'react-bootstrap';
 import { EyeFill, EyeSlashFill, InfoCircle, PersonFill, LockFill, TelephoneFill } from 'react-bootstrap-icons';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,8 +16,14 @@ const Login = () => {
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
   const LoginSchema = Yup.object().shape({
-    AliasId: Yup.string().required('Alias ID is required'),
-    password: Yup.string().required('Password is required'),
+    AliasId: Yup.string()
+      .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
+      .required('Alias ID is required'),
+    password: Yup.string()
+      .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
+      .matches(/[A-Za-z]/, 'At least one letter required')
+      .matches(/[0-9]/, 'At least one number required')
+      .required('Password is required'),
     phone: Yup.string().when([], {
       is: () => showPhone,
       then: () =>
@@ -51,7 +56,7 @@ const Login = () => {
       } else {
         toast.success('Login successful!');
         setTimeout(() => {
-          navigate('/home');
+          navigate('/student/home');
         }, 3700);
       }
     } catch (err) {
@@ -86,17 +91,25 @@ const Login = () => {
   return (
     <div
       style={{
-        background: 'linear-gradient(to right,rgb(190, 126, 182),rgb(120, 123, 228))',
+        background: 'url("/blue.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'Segoe UI, sans-serif',
+        padding: '40px 0',
       }}
     >
-      <Container style={{ maxWidth: '500px' }}>
-        <Card className="p-4 shadow-lg" style={{ borderRadius: '20px', backgroundColor: 'white' }}>
-
+      <Container style={{ maxWidth: '600px' }}>
+        <Card className="p-4 shadow-lg rounded-4"
+          style={{
+            background: 'transparent',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }}
+        >
           {showPhone ? (
             <>
               <h3 className="text-center mb-1 fw-bold">
@@ -108,7 +121,7 @@ const Login = () => {
             </>
           ) : (
             <>
-              <h3 className="text-center mb-1 fw-bold text-primary">Welcome Back</h3>
+              <h3 className="text-center mb-1 fw-bold text-dark">Welcome Back</h3>
               <p className="text-center text-muted mb-4">Log in to continue your journey 🌱</p>
             </>
           )}
@@ -209,7 +222,7 @@ const Login = () => {
                         variant="secondary"
                         onClick={() => {
                           setShowPhone(false);
-                          setPhonePurpose(''); // Reset phone purpose to show all login fields again
+                          setPhonePurpose(''); // To show all login fields again
                           resetForm(); // Clear all fields
                         }}
                       >
@@ -223,7 +236,7 @@ const Login = () => {
                   <>
                     <Button
                       type="submit"
-                      variant="primary"
+                      variant="dark"
                       className="w-100 mt-3 fw-semibold"
                       disabled={isSubmitting}
                     >
@@ -233,29 +246,29 @@ const Login = () => {
                     <div className="text-center mt-3 d-flex flex-column">
                       <Button
                         variant="link"
-                        className="text-decoration-none"
-                        onClick={() => navigate('/signup/student')}
+                        className="text-decoration-none text-dark"
+                        onClick={() => navigate('/student/signup')}
                       >
                         Don't have an account?
                       </Button>
                       <Button
                         variant="link"
-                        className="text-decoration-none"
+                        className="text-decoration-none text-dark"
                         onClick={() => {
                           setPhonePurpose('forgot-password');
                           setShowPhone(true);
-                          resetForm(); // Clear all fields
+                          resetForm();
                         }}
                       >
                         Forgot Password?
                       </Button>
                       <Button
                         variant="link"
-                        className="text-decoration-none"
+                        className="text-decoration-none text-dark"
                         onClick={() => {
                           setPhonePurpose('forgot-aliasid');
                           setShowPhone(true);
-                          resetForm(); // Clear all fields
+                          resetForm();
                         }}
                       >
                         Forgot Alias ID?
@@ -268,8 +281,6 @@ const Login = () => {
           </Formik>
         </Card>
       </Container>
-
-      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

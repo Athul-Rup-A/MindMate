@@ -282,6 +282,7 @@ const Stat = () => {
                                                     <div><strong>Triggered By:</strong> {sos.StudentId?.AliasId || 'Unknown'}</div>
                                                     <div><strong>Method:</strong> {sos.Method}</div>
                                                     <div><strong>Alerted To:</strong> {sos.AlertedTo?.map((user) => user?.FullName || 'Unknown').join(', ')}</div>
+                                                    <div><strong>Responded At:</strong> {new Date(sos.RespondedAt).toLocaleString()}</div>
                                                 </Card.Body>
                                             </Card>
                                         </Col>

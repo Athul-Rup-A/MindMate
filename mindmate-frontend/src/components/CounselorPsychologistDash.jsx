@@ -20,7 +20,7 @@ const CounselorPsychologistDash = () => {
 
                 if (!token) {
                     toast.error('Authentication token not found. Please log in again.');
-                    navigate('/login');
+                    navigate('/student/login');
                     return;
                 }
 
@@ -82,7 +82,7 @@ const CounselorPsychologistDash = () => {
                                         variant="primary"
                                         className="mt-3"
                                         onClick={() =>
-                                            navigate(`/appointments/${counselorPsychologist._id}`, {
+                                            navigate(`/student/appointments/${counselorPsychologist._id}`, {
                                                 state: {
                                                     name: counselorPsychologist.FullName,
                                                     availability: Array.isArray(counselorPsychologist.AvailabilitySlots)

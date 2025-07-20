@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import authHeader from '../../config/authHeader';
-import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import GoHomeButton from '../../components/GoHomeButton';
+import { toast } from 'react-toastify';
 
 const Profile = () => {
   const [profile, setProfile] = useState({ AliasId: '', Phone: '', Email: '' });
   const [loading, setLoading] = useState(true);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const navigate = useNavigate();
 
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
 
@@ -49,24 +45,25 @@ const Profile = () => {
       .required('Required')
       .matches(
         /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
-        'At least 8 characters, 1 letter & 1 number'
+        'Minimum 8 characters with atleast one letter and one number, alphanumeric only'
       ),
   });
 
   return (
-    <Container
-      className="py-5"
-      style={{ background: 'linear-gradient(to right, #e3f2fd,rgb(253, 247, 189))', minHeight: '100vh' }}
-    >
-      <ToastContainer position="top-right" autoClose={3000} />
-
-      {/* Top Right Home Button */}
-      <GoHomeButton />
-
+    <Container>
       <Row className="g-4 align-items-stretch">
+
         {/* Profile Edit */}
         <Col md={6} className="d-flex flex-column">
-          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between">
+          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between"
+            style={{
+              background: 'transparent',
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: '20px',
+              padding: '2rem',
+              boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            }}>
             <h4 className="mb-3 fw-bold text-center">My Profile</h4>
             <Formik
               initialValues={{ Phone: profile.Phone, Email: profile.Email }}
@@ -117,7 +114,15 @@ const Profile = () => {
 
         {/* Password Change */}
         <Col md={6} className="d-flex flex-column">
-          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between">
+          <Card className="p-4 shadow rounded-4 flex-grow-1 d-flex flex-column justify-content-between"
+            style={{
+              background: 'transparent',
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: '20px',
+              padding: '2rem',
+              boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            }}>
             <h4 className="mb-3 fw-bold text-center">Change Password</h4>
             <Formik
               initialValues={{ currentPassword: '', newPassword: '' }}

@@ -64,8 +64,8 @@ const ForceResetPassword = () => {
         role === 'admin'
           ? '/admin/login'
           : role === 'counselorPsychologist'
-            ? '/login/counselorpsychologist'
-            : '/login/student';
+            ? '/counselorpsychologist/login'
+            : '/student/login';
 
       navigate(loginPath);
       return;
@@ -84,8 +84,8 @@ const ForceResetPassword = () => {
           role === 'admin'
             ? '/admin/login'
             : role === 'counselorPsychologist'
-              ? '/login/counselorpsychologist'
-              : '/login/student';
+              ? '/counselorpsychologist/login'
+              : '/student/login';
 
         navigate(loginPath);
       }, 4000);

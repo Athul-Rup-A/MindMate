@@ -66,7 +66,7 @@ const Signup = () => {
                         boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}
                 >
-                    <h2 className="text-center fw-bold text-dark mb-1">MindMate Admin Signup</h2>
+                    <h2 className="text-center fw-bold text-dark mb-1">MindMate Admin SignUp</h2>
                     <p className="text-center text-muted mb-4">Register to manage MindMate securely🛡️</p>
 
                     {adminExists ? (
