@@ -20,11 +20,8 @@ const Welcome = () => {
                         🌿 MindMate
                     </Navbar.Brand>
                     <Nav className="ms-auto">
-                        <Nav.Link as={Link} to="/student/login" className="fw-semibold">
-                            Student Login
-                        </Nav.Link>
-                        <Nav.Link as={Link} to="/counselorpsychologist/login" className="fw-semibold">
-                            Counselor Login
+                        <Nav.Link as={Link} to="/login" className="fw-bold">
+                            LOGIN
                         </Nav.Link>
                     </Nav>
                 </Container>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import StudentNavbar from '../components/StudentNavbar';
 import StudentFooter from '../components/StudentFooter';
+import StudentSidebar from '../components/StudentSidebar';
 
 const StudentLayout = () => {
     const location = useLocation();
@@ -37,8 +38,14 @@ const StudentLayout = () => {
         >
             <StudentNavbar />
 
-            <div style={{ flex: '1', paddingTop: '45px', paddingBottom: '45px' }}>
-                <Outlet />
+            <div style={{ display: 'flex', flex: 1, paddingBottom: '45px' }}>
+                <div style={{ width: '65px', flexShrink: 0 }}>
+                    <StudentSidebar />
+                </div>
+
+                <div style={{ flex: '1', paddingTop: '45px', paddingBottom: '45px' }}>
+                    <Outlet />
+                </div>
             </div>
 
             <StudentFooter />

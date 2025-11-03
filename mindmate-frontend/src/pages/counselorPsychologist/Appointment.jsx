@@ -17,6 +17,10 @@ const Appointment = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [statusToUpdate, setStatusToUpdate] = useState('');
+  const [reasonInput, setReasonInput] = useState('');
+
   const formatFullDateWithDay = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-GB', {
@@ -42,10 +46,10 @@ const Appointment = () => {
     fetchAppointments();
   }, []);
 
-  const handleStatusChange = async (appointmentId, newStatus) => {
+  const handleStatusChange = async (appointmentId, newStatus, reason = '') => {
     try {
       setUpdatingId(appointmentId);
-      await axios.put(`counselorPsychologist/appointments/${appointmentId}/status`, { status: newStatus });
+      await axios.put(`counselorPsychologist/appointments/${appointmentId}/status`, { status: newStatus, reason });
       toast.success('Appointment status updated');
       fetchAppointments();
     } catch (err) {
@@ -93,7 +97,7 @@ const Appointment = () => {
                       <Card.Title className="fw-bold text-primary">
                         Appointment #{idx + 1}
                       </Card.Title>
-                      <p><strong>Student:</strong> {item.StudentId?.AliasId || 'N/A'}</p>
+                      <p><strong>Student:</strong> {item.StudentId?.Username || 'N/A'}</p>
                       <p><strong>Day & Date:</strong> {formatFullDateWithDay(item.SlotDate)}</p>
                       <p><strong>Start Time:</strong> {item.SlotStartTime}</p>
                       <p><strong>End Time:</strong> {item.SlotEndTime}</p>
@@ -108,7 +112,11 @@ const Appointment = () => {
                             if (newStatus === 'completed') {
                               setSelectedAppointmentId(item._id);
                               setShowModal(true);
-                            } else {
+                            } else if (newStatus === 'rejected') {
+                              setSelectedAppointmentId(item._id);
+                              setStatusToUpdate(newStatus);
+                              setShowReasonModal(true);
+                            } else if (newStatus === 'confirmed') {
                               handleStatusChange(item._id, newStatus);
                             }
                           }}
@@ -151,6 +159,35 @@ const Appointment = () => {
           }
         }}
         message="Are you sure you want to mark this appointment as completed? This action cannot be undone."
+      />
+
+      <ConfirmModal
+        show={showReasonModal}
+        onHide={() => {
+          setShowReasonModal(false);
+          setReasonInput('');
+          setSelectedAppointmentId(null);
+        }}
+        onConfirm={async () => {
+          if (!reasonInput.trim()) {
+            toast.error('Please enter a reason.');
+            return;
+          }
+          await handleStatusChange(selectedAppointmentId, statusToUpdate, reasonInput);
+          setShowReasonModal(false);
+          setReasonInput('');
+          setSelectedAppointmentId(null);
+        }}
+        message={
+          <div>
+            <p>Please provide a reason for {statusToUpdate} the appointment:</p>
+            <textarea
+              className="form-control"
+              value={reasonInput}
+              onChange={(e) => setReasonInput(e.target.value)}
+            />
+          </div>
+        }
       />
 
     </Container>

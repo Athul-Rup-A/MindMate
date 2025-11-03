@@ -14,6 +14,7 @@ const AppointmentSchema = new Schema({
     enum: ['pending', 'confirmed', 'rejected', 'completed'],
     default: 'pending',
   },
+  StatusReason: { type: String, default: "" },
 }, { timestamps: true });
 
 const Appointment = model('Appointment', AppointmentSchema);

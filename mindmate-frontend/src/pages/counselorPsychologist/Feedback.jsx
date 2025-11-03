@@ -25,7 +25,7 @@ const Feedback = () => {
 
     const columns = [
         { header: '#', accessor: (_, idx) => idx + 1 },
-        { header: 'Student', accessor: (item) => item.StudentId?.AliasId || 'N/A' },
+        { header: 'Student', accessor: (item) => item.StudentId?.Username || 'N/A' },
         { header: 'Rating', accessor: 'Rating' },
         { header: 'Comment', accessor: 'Comment' },
         {

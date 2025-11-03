@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Card, Button, Form, InputGroup } from "react-bootstrap";
+import { Card, Button, Form, InputGroup, Dropdown } from "react-bootstrap";
+import { Check, CheckCheck } from "lucide-react";
 import socket from "../config/socket";
 import axioInstance from '../config/axios';
 
@@ -14,10 +15,8 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
   useEffect(() => {
     console.log("Target ID being used:", targetId);
     if (myId) {
+      console.log("Joining my room:", myId);
       socket.emit('join', myId);
-    }
-    if (targetId) {
-      socket.emit('join', targetId);
     }
 
     socket.on('receiveMessage', (msg) => {
@@ -40,6 +39,12 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
       setMessages((prev) => prev.filter(msg => msg._id !== deletedId));
     });
 
+    socket.on("messageEdited", (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === updatedMsg._id ? { ...m, ...updatedMsg } : m))
+      );
+    });
+
     const fetchName = async () => {
       try {
         console.log("🔎 Fetching chat target name");
@@ -58,11 +63,11 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
 
         if (isStudent) {
           res = await axioInstance.get(`students/counselorPsychologist/${targetId}`);
-          setTargetName(res.data.FullName || res.data.AliasId || 'Counselor');
+          setTargetName(res.data.FullName || res.data.Username || 'Counselor');
           setTargetRole(res.data.Role || '');
         } else {
           res = await axioInstance.get(`counselorPsychologist/students/${targetId}`);
-          setTargetName(res.data.AliasId || 'Student');
+          setTargetName(res.data.Username || 'Student');
           setTargetRole('Student');
         }
       } catch (err) {
@@ -105,7 +110,11 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
       const res = await axioInstance.get(`/chat/${myId}/${targetId}`);
       const history = res.data.map(msg => ({
         ...msg,
-        self: msg.from === myId
+        self: msg.from === myId,
+        //  if it's my message, check if THEY have seen it
+        seen: msg.from === myId
+          ? msg.seenBy?.includes(targetId)
+          : msg.seenBy?.includes(myId) // for consistency, you may track if I saw it
       }));
       setMessages(history);
 
@@ -119,6 +128,31 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
       msg.text.toLowerCase().includes(searchTerm.toLowerCase())
     )
     : messages;
+
+  // Emit messageSeen when the latest incoming msg is viewed
+  useEffect(() => {
+    if (filteredMessages.length > 0) {
+      const lastMsg = filteredMessages[filteredMessages.length - 1];
+
+      // Only mark as seen if it's from the other user and not already seen
+      if (!lastMsg.self && !lastMsg.seen) {
+        socket.emit("messageSeen", { messageId: lastMsg._id, userId: myId });
+      }
+    }
+  }, [filteredMessages, myId]);
+
+  // Listen for seen updates from server
+  useEffect(() => {
+    socket.on("messageSeenUpdate", ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, seen: true } : m))
+      );
+    });
+
+    return () => {
+      socket.off("messageSeenUpdate");
+    };
+  }, []);
 
   // Check if message is deletable (within 24 hours)
   const canDeleteMessage = (timestamp) => {
@@ -165,6 +199,25 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
     } catch (err) {
       console.error("❌ Failed to delete message:", err);
       alert("Failed to delete message.");
+    }
+  };
+
+  const saveEdit = async (id, newText) => {
+    try {
+      const res = await axioInstance.put(`/chat/${id}`, { text: newText });
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === id ? { ...m, text: res.data.text, edited: true } : m
+        )
+      );
+
+      // Also notify the other user:
+      socket.emit("editMessage", res.data);
+
+    } catch (err) {
+      console.error("❌ Failed to edit message:", err);
+      alert("Failed to edit message.");
     }
   };
 
@@ -220,8 +273,10 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
               <div key={i}
                 style={{ textAlign: msg.self ? 'right' : 'left', marginBottom: '8px' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: msg.self ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: msg.self ? 'flex-end' : 'flex-start', marginBottom: "8px", }}>
                     <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       background: msg.self ? '#d1e7dd' : '#f1f1f1',
                       padding: '8px 12px',
                       borderRadius: '12px',
@@ -230,23 +285,65 @@ const ChatBox = ({ myId, targetId, isInCall, onClose }) => {
                       whiteSpace: 'pre-wrap',
                       overflowWrap: 'break-word',
                     }}>
-                      <strong>{msg.self ? 'You' : targetName.split(' ')[0]}:</strong> {msg.text}
+                      <span><strong>{msg.self ? 'You' : targetName.split(' ')[0]}:</strong> {msg.text}</span>
                       {msg.self && canDeleteMessage(msg.timestamp) && (
-                        <Button
-                          size="sm"
-                          variant="transparent"
-                          onClick={() => deleteMessage(i)}
-                          style={{ marginLeft: '10px', padding: '0', marginBottom: '3px', fontSize: '0.7rem' }}
-                        >
-                          ❌
-                        </Button>
+                        <Dropdown align="end">
+                          <Dropdown.Toggle
+                            as="button"
+                            style={{
+                              background: "transparent",
+                              height: '15px',
+                              width: '20px',
+                              border: "none",
+                              padding: "0 5px",
+                              marginLeft: "6px",
+                              boxShadow: "none",
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                          </Dropdown.Toggle>
+
+                          <Dropdown.Menu>
+                            <Dropdown.Item
+                              onClick={() => {
+                                const newText = prompt("Edit your message:", msg.text);
+                                if (newText && newText.trim()) {
+                                  saveEdit(msg._id, newText);
+                                }
+                              }}
+                              className="text-primary"
+                            >
+                              ✍️ Edit
+                            </Dropdown.Item>
+
+                            <Dropdown.Divider style={{ margin: "4px 0" }} />
+
+                            <Dropdown.Item
+                              onClick={() => deleteMessage(i)}
+                              className="text-danger"
+                            >
+                              ❌ Delete
+                            </Dropdown.Item>
+                          </Dropdown.Menu>
+                        </Dropdown>
                       )}
                     </div>
                   </div>
                 </div>
                 {(time || date) && (
-                  <small style={{ color: '#888' }}>{date} • {time}</small>
+                  <small style={{ color: '#888' }}>
+                    {date} • {time}
+                    {msg.self && (
+                      msg.seen ? (
+                        <CheckCheck size={16} color="blue" style={{ marginLeft: "5px" }} /> // Seen (double blue tick)
+                      ) : (
+                        <Check size={16} color="gray" style={{ marginLeft: "5px" }} /> // Sent (single gray tick)
+                      )
+                    )}
+                  </small>
                 )}
+
               </div>
             );
           })

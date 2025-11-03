@@ -14,7 +14,7 @@ const Feedback = () => {
     const [showModal, setShowModal] = useState(false);
     const [appointments, setAppointments] = useState([]);
 
-    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+    const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
     const fetchFeedbacks = async () => {
         try {
@@ -64,7 +64,7 @@ const Feedback = () => {
     const feedbackSchema = Yup.object().shape({
         Type: Yup.string()
             .required('Feedback type is required')
-            .oneOf(['session', 'platform', 'content', 'SOS']),
+            .oneOf(['session', 'platform', 'content']),
         CounselorPsychologistId: Yup.string().when('Type', {
             is: 'session',
             then: (schema) => schema.required('Please select a session'),
@@ -171,34 +171,34 @@ const Feedback = () => {
                                         <option value="session">Session</option>
                                         <option value="platform">Platform</option>
                                         <option value="content">Content</option>
-                                        <option value="SOS">SOS</option>
                                     </Field>
                                     <ErrorMessage name="Type" component="div" className="text-danger" />
                                 </Form.Group>
                             </div>
                         </div>
 
-                        <Form.Group className="mb-2">
-                            <Form.Label>Select Session (Counselor/Psychologist)</Form.Label>
-                            <Field
-                                name="CounselorPsychologistId"
-                                as="select"
-                                className="form-control"
-                                disabled={values.Type !== 'session'} // Conditionally disable here
-                            >
-                                <option value="">Select a session</option>
-                                {getSessionOptions(appointments).map((opt, idx) => (
-                                    <option key={idx} value={opt.value} disabled={opt.isDisabled}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </Field>
-                            <ErrorMessage
-                                name="CounselorPsychologistId"
-                                component="div"
-                                className="text-danger"
-                            />
-                        </Form.Group>
+                        {values.Type === 'session' && (
+                            <Form.Group className="mb-2">
+                                <Form.Label>Select Session (Counselor/Psychologist)</Form.Label>
+                                <Field
+                                    name="CounselorPsychologistId"
+                                    as="select"
+                                    className="form-control"
+                                >
+                                    <option value="">Select a session</option>
+                                    {getSessionOptions(appointments).map((opt, idx) => (
+                                        <option key={idx} value={opt.value} disabled={opt.isDisabled}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </Field>
+                                <ErrorMessage
+                                    name="CounselorPsychologistId"
+                                    component="div"
+                                    className="text-danger"
+                                />
+                            </Form.Group>
+                        )}
 
                         <Form.Group className="mb-3">
                             <Form.Label>Comment</Form.Label>
@@ -283,7 +283,6 @@ const Feedback = () => {
                                         <option value="session">Session</option>
                                         <option value="platform">Platform</option>
                                         <option value="content">Content</option>
-                                        <option value="SOS">SOS</option>
                                     </Field>
                                     <ErrorMessage name="Type" component="div" className="text-danger" />
                                 </Form.Group>

@@ -5,8 +5,11 @@ import { toast } from 'react-toastify';
 import { Formik, Field } from 'formik';
 import * as Yup from 'yup';
 import authHeader from '../../config/authHeader';
+import { FileEarmarkText } from 'react-bootstrap-icons';
+import ReportModal from '../../components/ReportModal'
+import { FlagFill } from 'react-bootstrap-icons';
 
-const BASE_URL = 'http://localhost:5000/api/students';
+const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
 const ResourceSchema = Yup.object().shape({
     language: Yup.string().optional(),
@@ -19,6 +22,33 @@ const Resource = () => {
     const [selectedType, setSelectedType] = useState('');
     const [selected, setSelected] = useState(null);
     const [showModal, setShowModal] = useState(false);
+
+    const [showReport, setShowReport] = useState(false);
+    const [selectedResource, setSelectedResource] = useState(null);
+
+
+    const openReportModal = (resource) => {
+        setSelectedResource(resource);
+        setShowReport(true);
+    };
+
+    const handleReport = async (resource) => {
+
+        const payload = {
+            TargetId: resource._id,
+            TargetType: 'Resource',
+            Reason: 'other',
+            CustomReason: 'Inappropriate content',
+            reportRole: 'resource',
+        };
+
+        try {
+            await axios.post(`${BASE_URL}/reports`, payload, authHeader());
+            toast.success(`Reported "${resource.title}" successfully`);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to report resource');
+        }
+    };
 
     const fetchResources = async () => {
         try {
@@ -61,6 +91,24 @@ const Resource = () => {
         fetchResources();
     }, []);
 
+    const handleReportSubmit = async (resource, values) => {
+        try {
+            await axios.post(
+                `${BASE_URL}/reports`,
+                {
+                    TargetId: resource._id,
+                    TargetType: "Resource",
+                    Reason: values.Reason,
+                    OtherReason: values.CustomReason || null
+                },
+                authHeader()
+            );
+            toast.success("Report submitted successfully");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to report");
+        }
+    };
+
     return (
         <>
             <Container>
@@ -86,8 +134,6 @@ const Resource = () => {
                             >
                                 <option value="">All Languages</option>
                                 <option value="English">English</option>
-                                <option value="Hindi">Hindi</option>
-                                <option value="Tamil">Tamil</option>
                                 <option value="Malayalam">Malayalam</option>
                             </Field>
 
@@ -125,6 +171,14 @@ const Resource = () => {
                                         <Button variant="primary" onClick={() => fetchSingleResource(res._id)}>
                                             View Resource
                                         </Button>
+
+                                        <Button
+                                            variant="info"
+                                            className='ms-2'
+                                            onClick={() => openReportModal(res)}
+                                        >
+                                            <FlagFill />
+                                        </Button>
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -145,6 +199,12 @@ const Resource = () => {
                         </a>
                     </Modal.Body>
                 </Modal>
+                <ReportModal
+                    show={showReport}
+                    onHide={() => setShowReport(false)}
+                    onSubmit={handleReportSubmit}
+                    resource={selectedResource}
+                />
             </Container>
         </>
     );

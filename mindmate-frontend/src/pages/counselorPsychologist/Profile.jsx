@@ -16,6 +16,11 @@ const ProfileSchema = Yup.object().shape({
         .required('Email is required'),
     Credentials: Yup.string().required('Credentials are required'),
     Specialization: Yup.string().required('Specialization is required'),
+    CustomSpecialization: Yup.string().when("Specialization", (Specialization, schema) => {
+        return Specialization === "Other"
+            ? schema.required("Please enter your specialization")
+            : schema.notRequired();
+    })
 });
 
 const PasswordSchema = Yup.object().shape({
@@ -28,6 +33,9 @@ const PasswordSchema = Yup.object().shape({
 const Profile = () => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
 
     const fetchProfile = async () => {
         try {
@@ -44,6 +52,33 @@ const Profile = () => {
         fetchProfile();
     }, []);
 
+    const handleImageUpload = async () => {
+        if (!selectedImage) {
+            toast.error("Please select an image");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("ProfileImage", selectedImage);
+
+        try {
+            const res = await axios.put(
+                "counselorPsychologist/profile-image",
+                formData,
+            );
+            console.log("Profile Image URL:", res.data.ProfileImage);
+            toast.success("Image updated successfully!");
+            setProfile((prev) => ({
+                ...prev,
+                ProfileImage: res.data.ProfileImage
+            }));
+            setSelectedImage(null);
+            setPreviewImage(null);
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Image upload failed");
+        }
+    };
+
     const handleProfileUpdate = async (values, { setSubmitting, resetForm, dirty }) => {
         const isSame = (a, b) =>
             ['FullName', 'Phone', 'Email', 'Credentials', 'Specialization']
@@ -55,11 +90,19 @@ const Profile = () => {
             return;
         }
 
+        const submitValues = {
+            FullName: values.FullName,
+            Phone: values.Phone,
+            Email: values.Email,
+            Credentials: values.Credentials,
+            Specialization: values.Specialization === "Other"
+                ? values.CustomSpecialization
+                : values.Specialization,
+        };
+
         try {
-            const res = await axios.put('counselorPsychologist/profile', values);
-            toast.success('Profile updated successfully');
-            setProfile(res.data);
-            resetForm({ values: res.data });
+            const res = await axios.post('counselorPsychologist/request-profile-update', submitValues);
+            toast.success('Verification email sent. Please check your inbox to confirm changes.');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update profile');
         } finally {
@@ -69,8 +112,8 @@ const Profile = () => {
 
     const handlePasswordChange = async (values, { resetForm, setSubmitting }) => {
         try {
-            await axios.put('counselorPsychologist/change-profile-password', values);
-            toast.success('Password changed successfully');
+            await axios.post('counselorPsychologist/request-password-change', values);
+            toast.success('Verification email sent. Please check your inbox to confirm password change.');
             resetForm();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Password change failed');
@@ -87,6 +130,19 @@ const Profile = () => {
         );
     }
 
+    const specializationOptions = [
+        "Clinical",
+        "Counseling",
+        "Child",
+        "Rehabilitation",
+        "Other",
+    ];
+
+    const normalizedSpecialization = profile?.Specialization?.trim().toLowerCase();
+    const isCustom = profile && !specializationOptions
+        .map(opt => opt.trim().toLowerCase())
+        .includes(normalizedSpecialization);
+
     return (
         <Container>
             <Row className="g-4 align-items-stretch">
@@ -99,25 +155,102 @@ const Profile = () => {
                                 Phone: profile?.Phone || '',
                                 Email: profile?.Email || '',
                                 Credentials: profile?.Credentials || '',
-                                Specialization: profile?.Specialization || '',
+                                Specialization: isCustom ? "Other" : profile?.Specialization || "",
+                                CustomSpecialization: isCustom ? profile?.Specialization : ""
                             }}
                             validationSchema={ProfileSchema}
                             enableReinitialize
                             onSubmit={handleProfileUpdate}
                         >
-                            {({ isSubmitting, dirty }) => (
+                            {({ isSubmitting, values, errors, touched, setFieldValue, dirty }) => (
                                 <FormikForm>
 
                                     <Row>
-                                        <FormField name="FullName" label="Full Name" placeholder="Enter your full name" />
+
+                                        <div className="text-center mb-4">
+                                            <img
+                                                src={
+                                                    previewImage ||
+                                                    `${profile?.ProfileImage}?t=${Date.now()}` ||
+                                                    "/default-avatar.png"
+                                                }
+                                                alt="Profile"
+                                                className="rounded-circle border"
+                                                style={{ width: "110px", height: "110px", objectFit: "cover" }}
+                                            />
+
+                                            <div>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        setSelectedImage(file);
+                                                        setPreviewImage(URL.createObjectURL(file));
+                                                    }}
+                                                />
+
+                                                <Button
+                                                    variant="success"
+                                                    className="mb-1"
+                                                    disabled={!selectedImage}
+                                                    onClick={handleImageUpload}
+                                                >
+                                                    Upload Image
+                                                </Button>
+                                            </div>
+                                        </div>
+
                                         <Col md={6}>
-                                            <FormField name="Credentials" label="Credentials" placeholder="Enter your credentials" />
-                                            <FormField name="Phone" label="Phone Number" placeholder="Enter your phone number" />
+                                            <FormField name="FullName" label="Full Name" placeholder="Enter your full name" />
+                                        </Col>
+                                        <Col md={6}>
+                                            <FormField name="Email" label="Email" placeholder="Enter your email address" />
                                         </Col>
 
                                         <Col md={6}>
-                                            <FormField name="Specialization" label="Specialization" placeholder="Enter your specialization" />
-                                            <FormField name="Email" label="Email" placeholder="Enter your email address" />
+                                            <FormField name="Phone" label="Phone Number" placeholder="Enter your phone number" />
+                                        </Col>
+                                        <Col md={6}>
+                                            <FormField name="Credentials" label="Credentials" placeholder="Enter your credentials" />
+                                        </Col>
+
+                                        <Col md={6}>
+                                            <div className="mb-3">
+                                                <label className="form-label">Specialization</label>
+                                                <select
+                                                    name="Specialization"
+                                                    className="form-control"
+                                                    value={values.Specialization}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setFieldValue("Specialization", val);
+                                                        if (val !== "Other") {
+                                                            setFieldValue("CustomSpecialization", "");
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="" disabled>-- Select Specialization --</option>
+                                                    {specializationOptions.map((opt) => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                                {errors.Specialization && touched.Specialization && (
+                                                    <div className="text-danger small">{errors.Specialization}</div>
+                                                )}
+                                            </div>
+
+                                        </Col>
+
+                                        <Col md={6}>
+                                            {/* Custom input shown only when "Other" is selected */}
+                                            {values.Specialization === "Other" && (
+                                                <FormField
+                                                    name="CustomSpecialization"
+                                                    label="Specified Specialization"
+                                                    placeholder="Enter specialization"
+                                                />
+                                            )}
                                         </Col>
                                     </Row>
 
@@ -131,7 +264,7 @@ const Profile = () => {
                 </Col>
 
                 <Col md={6} className="d-flex flex-column">
-                    <Card className="p-4 shadow-lg rounded-4 flex-grow-1 d-flex flex-column justify-content-between h-100">
+                    <Card className="p-4 shadow-lg rounded-4">
                         <h4 className="fw-bold text-danger text-center mb-3">Change Password</h4>
                         <Formik
                             initialValues={{ currentPassword: '', newPassword: '' }}
@@ -145,16 +278,16 @@ const Profile = () => {
                                         label="Current Password"
                                         type="password"
                                         placeholder="Enter your current password"
-                                        className="mb-4"
+                                        className="mb-3"
                                     />
                                     <FormField
                                         name="newPassword"
                                         label="New Password"
                                         type="password"
                                         placeholder="Enter your new password"
-                                        className="mb-4"
+                                        className="mb-3"
                                     />
-                                    <Button variant="danger" type="submit" disabled={isSubmitting} className="w-100 mt-2">
+                                    <Button variant="danger" type="submit" disabled={isSubmitting} className="w-100">
                                         {isSubmitting ? 'Changing...' : 'Change Password'}
                                     </Button>
                                 </FormikForm>

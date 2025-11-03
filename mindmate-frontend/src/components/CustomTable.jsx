@@ -28,25 +28,30 @@ const CustomTable = ({ columns, data, actions, renderExpandedRow, rowKey }) => {
                   <td>
                     <div className="d-flex gap-2 flex-nowrap">
                       {actions.map((action, i) => {
-                        const shouldShow = typeof action.show === 'function' ? action.show(item, idx) : true;
+                        const shouldShow = typeof action.show === 'function' ? action.show(item, idx) : action.show !== false;
 
-                        return shouldShow ? (
+                        if (!shouldShow) return null;
+
+                        const isDisabled = typeof action.disabled === 'function' ? action.disabled(item, idx) : action.disabled;
+                        const label = typeof action.label === 'function' ? action.label(item, idx) : action.label;
+                        const variant = typeof action.variant === 'function' ? action.variant(item, idx) : action.variant || 'primary';
+
+                        return (
                           <Button
                             key={i}
                             size="sm"
-                            variant={action.variant || 'primary'}
-                            className="px-3"
-                            disabled={typeof action.disabled === 'function' ? action.disabled(item, idx) : false}
+                            variant={variant}
+                            className="w-100"
+                            disabled={isDisabled}
                             onClick={() => {
-                              const isDisabled = typeof action.disabled === 'function' ? action.disabled(item, idx) : false;
-                              if (!isDisabled) {
+                              if (!isDisabled && typeof action.onClick === 'function') {
                                 action.onClick(item, idx);
                               }
                             }}
                           >
-                            {action.label}
+                            {label}
                           </Button>
-                        ) : null;
+                        );
                       })}
                     </div>
                   </td>

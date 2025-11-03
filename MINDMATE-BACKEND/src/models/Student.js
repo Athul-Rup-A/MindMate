@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { Schema, ObjectId } = mongoose;
 
 const StudentSchema = new Schema({
-  AliasId: { type: String, required: true, unique: true },
+  Username: { type: String, required: true, unique: true },
   PasswordHash: { type: String, required: true },
   isTempPassword: {
     type: Boolean,
@@ -14,19 +14,6 @@ const StudentSchema = new Schema({
     type: Date,
   },
   Feedbacks: [{ type: Schema.Types.ObjectId, ref: 'Feedback' }],
-  MoodEntries: [{
-    Date: { type: Date, default: Date.now },
-    Mood: {
-      type: String,
-      required: true,
-      enum: ['happy', 'sad', 'stressed', 'anxious', 'motivated']
-    },
-    Note: { type: String },
-    Tags: [{
-      type: String,
-      enum: ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic']
-    }],
-  }],
   Phone: {
     type: String,
     required: true,
@@ -35,14 +22,22 @@ const StudentSchema = new Schema({
   Email: { type: String, required: true, unique: true },
   Role: { type: String, enum: ['student'], default: 'student' },
   VentPosts: [{ type: Schema.Types.ObjectId, ref: 'VentWall' }],
-  HabitLogs: [{
-    Date: { type: Date, required: true },
-    Exercise: { type: Boolean, default: false },
-    Hydration: { type: Number, default: 0 }, // in ml
-    ScreenTime: { type: Number, default: 0 }, // in hours
-    SleepHours: { type: Number, default: 0 },
-  }],
-  SosTriggers: [{ type: Schema.Types.ObjectId, ref: 'SOSLog' }],
+  pendingUpdates: {
+    Phone: { type: String },
+    Email: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date },
+  },
+  pendingPasswordChange: {
+    newPasswordHash: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date },
+  },
+  Status: {
+    type: String,
+    enum: ['active', 'inactive', 'blocked'],
+    default: 'active'
+  },
 }, { timestamps: true }); // automatic createdAt and updatedAt
 
 const Student = mongoose.model('Student', StudentSchema);

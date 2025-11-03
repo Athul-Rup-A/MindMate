@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../config/axios';
 import { toast } from 'react-toastify';
-import { Container, Row, Col, Card, Spinner, Modal, Button, } from 'react-bootstrap';
-import { PeopleFill, PersonWorkspace, PersonBadgeFill, ExclamationTriangleFill, ChatDotsFill, } from 'react-bootstrap-icons';
+import { Container, Row, Col, Card, Spinner, Modal, Button, Form } from 'react-bootstrap';
+import { PeopleFill, PersonWorkspace, PersonBadgeFill, ExclamationTriangleFill, ChatDotsFill, CalendarFill, } from 'react-bootstrap-icons';
 
 const Stat = () => {
     const [stats, setStats] = useState(null);
@@ -50,9 +50,9 @@ const Stat = () => {
                 endpoint = '/admin/vents';
                 title = 'Vents';
                 break;
-            case 'sos':
-                endpoint = '/admin/sos';
-                title = 'SOS Logs';
+            case 'appointments':
+                endpoint = '/admin/appointments';
+                title = 'Appointments';
                 break;
             default:
                 return;
@@ -88,24 +88,48 @@ const Stat = () => {
             type: 'students',
         },
         {
-            title: 'Total Reports',
-            value: stats?.totalReports,
-            icon: <ExclamationTriangleFill size={28} className="text-danger" />,
-            type: 'reports',
-        },
-        {
             title: 'Total Vents',
             value: stats?.totalVents,
             icon: <ChatDotsFill size={28} className="text-warning" />,
             type: 'vents',
         },
         {
-            title: 'Total SOS',
-            value: stats?.totalSOS,
-            icon: <ExclamationTriangleFill size={28} className="text-warning" />,
-            type: 'sos',
+            title: 'Total Appointments',
+            value: stats?.totalAppointments,
+            icon: <CalendarFill size={28} className="text-warning" />,
+            type: 'appointments',
+        },
+        {
+            title: 'Total Reports',
+            value: stats?.totalReports,
+            icon: <ExclamationTriangleFill size={28} className="text-danger" />,
+            type: 'reports',
         },
     ];
+
+    const handleStatusChange = async (id, status, role) => {
+        try {
+            const url =
+                role === 'student'
+                    ? `admin/student/${id}/status`
+                    : `admin/counselorPsychologist/${id}/status`;
+
+            await axios.put(
+                url,
+                { status },
+            );
+
+            toast.success(`${role} status updated to ${status}`);
+
+            setModalData((prevData) =>
+                prevData.map((item) =>
+                    item._id === id ? { ...item, Status: status } : item
+                )
+            );
+        } catch (err) {
+            toast.error('Failed to update status');
+        }
+    };
 
     return (
         <Container>
@@ -154,7 +178,7 @@ const Stat = () => {
                                         <Col md={6} key={admin._id} className="mb-3">
                                             <Card className="shadow-sm border-0 h-100">
                                                 <Card.Body>
-                                                    <Card.Title className="text-primary">{admin.AliasId}</Card.Title>
+                                                    <Card.Title className="text-primary">{admin.Username}</Card.Title>
                                                     <div><strong>Role:</strong> {admin.Role}</div>
                                                     <div><strong>Email:</strong> {admin.Email}</div>
                                                     <div><strong>Phone:</strong> {admin.Phone}</div>
@@ -174,16 +198,11 @@ const Stat = () => {
                                                 <Card.Body>
                                                     <Card.Title className="text-primary">{counpsycho.FullName}</Card.Title>
                                                     <Card.Subtitle className="mb-1 text-muted text-capitalize">{counpsycho.Role}</Card.Subtitle>
-                                                    <div><strong>Alias ID:</strong> {counpsycho.AliasId}</div>
+                                                    <div><strong>Username:</strong> {counpsycho.Username}</div>
                                                     <div><strong>Email:</strong> {counpsycho.Email}</div>
                                                     <div><strong>Phone:</strong> {counpsycho.Phone}</div>
                                                     <div><strong>Specialization:</strong> {counpsycho.Specialization}</div>
                                                     <div><strong>Credentials:</strong> {counpsycho.Credentials}</div>
-                                                    <div><strong>Status:</strong>{' '}
-                                                        <span className={`badge ${counpsycho.Status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
-                                                            {counpsycho.Status}
-                                                        </span>
-                                                    </div>
                                                     <div>
                                                         <strong>Availability:</strong>
                                                         <ul className="mb-0">
@@ -193,6 +212,20 @@ const Stat = () => {
                                                         </ul>
                                                     </div>
                                                     <div><strong>Created At:</strong> {new Date(counpsycho.createdAt).toLocaleDateString()}</div>
+                                                    <div className="mb-2">
+                                                        <strong>Status:</strong>{' '}
+                                                        <Form.Select
+                                                            value={counpsycho.Status}
+                                                            onChange={(e) =>
+                                                                handleStatusChange(counpsycho._id, e.target.value, 'counselor')
+                                                            }
+                                                            className="mt-1"
+                                                        >
+                                                            <option value="active">Active</option>
+                                                            <option value="inactive">Inactive</option>
+                                                            <option value="blocked">Blocked</option>
+                                                        </Form.Select>
+                                                    </div>
                                                 </Card.Body>
                                             </Card>
                                         </Col>
@@ -206,10 +239,24 @@ const Stat = () => {
                                         <Col md={6} key={student._id} className="mb-3">
                                             <Card className="shadow-sm border-0 h-100">
                                                 <Card.Body>
-                                                    <Card.Title className="text-primary">{student.AliasId}</Card.Title>
+                                                    <Card.Title className="text-primary">{student.Username}</Card.Title>
                                                     <div><strong>Email:</strong> {student.Email || 'N/A'}</div>
                                                     <div><strong>Phone:</strong> {student.Phone || 'N/A'}</div>
                                                     <div><strong>Created At:</strong> {new Date(student.createdAt).toLocaleDateString()}</div>
+                                                    <div className="mt-2">
+                                                        <strong>Status:</strong>{' '}
+                                                        <Form.Select
+                                                            value={student.Status}
+                                                            onChange={(e) =>
+                                                                handleStatusChange(student._id, e.target.value, 'student')
+                                                            }
+                                                            className="mt-1"
+                                                        >
+                                                            <option value="active">Active</option>
+                                                            <option value="inactive">Inactive</option>
+                                                            <option value="blocked">Blocked</option>
+                                                        </Form.Select>
+                                                    </div>
                                                 </Card.Body>
                                             </Card>
                                         </Col>
@@ -230,8 +277,8 @@ const Stat = () => {
                                                             {report.Status}
                                                         </span>
                                                     </div>
-                                                    <div><strong>Reporter:</strong> {report.ReporterId?.AliasId || 'Unknown'}</div>
-                                                    <div><strong>Target Name:</strong> {report.TargetId?.FullName || report.TargetId?.AliasId || 'Unknown'}</div>
+                                                    <div><strong>Reporter:</strong> {report.ReporterId?.Username || 'Unknown'}</div>
+                                                    <div><strong>Target Name:</strong> {report.TargetId?.FullName || report.TargetId?.Username || 'Unknown'}</div>
                                                     <div><strong>Date:</strong> {new Date(report.createdAt).toLocaleString()}</div>
                                                 </Card.Body>
                                             </Card>
@@ -252,17 +299,17 @@ const Stat = () => {
                                                     {vent.Likes?.length > 0 && (
                                                         <div>
                                                             <strong>Liked By:</strong>{' '}
-                                                            {vent.Likes.map((s) => s?.AliasId || 'Unknown').join(', ')}
+                                                            {vent.Likes.map((s) => s?.Username || 'Unknown').join(', ')}
                                                         </div>
                                                     )}
                                                     <div><strong>Reports:</strong> {vent.Reports?.length || 0}</div>
                                                     {vent.Reports?.length > 0 && (
                                                         <div>
                                                             <strong>Reported By:</strong>{' '}
-                                                            {vent.Reports.map((s) => s?.AliasId || 'Unknown').join(', ')}
+                                                            {vent.Reports.map((s) => s?.Username || 'Unknown').join(', ')}
                                                         </div>
                                                     )}
-                                                    <div><strong>Posted By:</strong> {vent.StudentId?.AliasId || 'Anonymous'}</div>
+                                                    <div><strong>Posted By:</strong> {vent.StudentId?.Username || 'Anonymous'}</div>
                                                     <div><strong>Date:</strong> {new Date(vent.createdAt).toLocaleString()}</div>
                                                 </Card.Body>
                                             </Card>
@@ -271,18 +318,48 @@ const Stat = () => {
                                 </Row>
                             )}
 
-                            {modalTitle === 'SOS Logs' && (
+                            {modalTitle === 'Appointments' && (
                                 <Row>
-                                    {modalData.map((sos) => (
-                                        <Col md={6} key={sos._id} className="mb-3">
+                                    {modalData.map((appointments) => (
+                                        <Col md={6} key={appointments._id} className="mb-3">
                                             <Card className="shadow-sm border-0 h-100">
                                                 <Card.Body>
-                                                    <Card.Title className="text-danger">SOS ID: {sos._id.slice(-6)}</Card.Title>
-                                                    <div><strong>Triggered At:</strong> {new Date(sos.TriggeredAt).toLocaleString()}</div>
-                                                    <div><strong>Triggered By:</strong> {sos.StudentId?.AliasId || 'Unknown'}</div>
-                                                    <div><strong>Method:</strong> {sos.Method}</div>
-                                                    <div><strong>Alerted To:</strong> {sos.AlertedTo?.map((user) => user?.FullName || 'Unknown').join(', ')}</div>
-                                                    <div><strong>Responded At:</strong> {new Date(sos.RespondedAt).toLocaleString()}</div>
+                                                    <Card.Title className="text-danger">Appointment ID: {appointments._id.slice(-6)}</Card.Title>
+                                                    <div><strong>Date:</strong> {new Date(appointments.SlotDate).toLocaleDateString()}</div>
+                                                    <div><strong>Time:</strong> {appointments.SlotStartTime} - {appointments.SlotEndTime}</div>
+                                                    <div><strong>Status:</strong>
+                                                        <span className={`ms-2 fw-bold text-${appointments.Status === 'confirmed' ? 'success' :
+                                                            appointments.Status === 'pending' ? 'warning' :
+                                                                appointments.Status === 'completed' ? 'primary' :
+                                                                    'danger'
+                                                            }`}>
+                                                            {appointments.Status.toUpperCase()}
+                                                        </span>
+                                                    </div>
+
+                                                    <div><strong>Status reason:</strong>
+                                                        {' '}{appointments.StatusReason || 'N/A'}</div>
+
+                                                    <hr />
+
+                                                    <div><strong>Student:</strong>
+                                                        {' '}{appointments.StudentId?.Username || 'N/A'}</div>
+
+                                                    <div><strong>Counselor/Psychologist:</strong>
+                                                        {' '}{appointments.CounselorPsychologistId?.FullName || 'Unknown'}</div>
+
+                                                    <div><strong>Specialization:</strong>
+                                                        {' '}{appointments.CounselorPsychologistId?.Specialization || 'Not specified'}</div>
+
+                                                    <div><strong>Role:</strong>
+                                                        {' '}{appointments.CounselorPsychologistId?.Role || 'N/A'}</div>
+
+                                                    <div><strong>Booked on:</strong>
+                                                        {' '}{appointments.createdAt ? new Date(appointments.createdAt).toLocaleString() : 'N/A'}</div>
+
+                                                    {appointments.StatusReason && (
+                                                        <div><strong>Status Reason:</strong> {appointments.StatusReason}</div>
+                                                    )}
                                                 </Card.Body>
                                             </Card>
                                         </Col>

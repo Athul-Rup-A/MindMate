@@ -9,7 +9,7 @@ const ReportSchema = new Schema({
     enum: ['CounselorPsychologist', 'Resource', 'Vent'],
     required: true,
   },
-  TargetAliasId: {
+  TargetUsername: {
     type: String,
     required: function () {
       return this.TargetType === 'CounselorPsychologist';
@@ -17,9 +17,10 @@ const ReportSchema = new Schema({
   },
   Reason: {
     type: String,
-    enum: ['spam', 'abuse', 'offensive', 'harassment', 'misinformation'],
+    enum: ['spam', 'abuse', 'offensive', 'harassment', 'misinformation', 'other'],
     required: true,
   },
+  OtherReason: { type: String },
   Status: {
     type: String,
     enum: ['pending', 'reviewed', 'resolved'],

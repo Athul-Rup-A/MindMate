@@ -2,10 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Container, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import Peer from 'simple-peer';
-import { io } from 'socket.io-client';
 import { Mic, MicMute, CameraVideo, CameraVideoOff, TelephoneFill } from 'react-bootstrap-icons';
-
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+import socket from '../config/socket'
 
 const CouncPsychVideoCall = ({ myId, targetId }) => {
   const [stream, setStream] = useState(null);
@@ -17,6 +15,16 @@ const CouncPsychVideoCall = ({ myId, targetId }) => {
   const navigate = useNavigate();
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
+
+  useEffect(() => {
+    socket.connect();
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+    });
+    socket.on("disconnect", () => {
+      console.log("❌ Socket disconnected");
+    });
+  }, []);
 
   useEffect(() => {
     let isMounted = true; // To prevent side-effects if unmounted quickly
@@ -57,7 +65,7 @@ const CouncPsychVideoCall = ({ myId, targetId }) => {
       connectionRef.current?.signal(signal);
     });
 
-    // 🔁 When student is ready, resend call
+    // When student is ready, resend call
     socket.on('readyForCall', ({ studentId }) => {
       if (studentId === targetId && savedSignal) {
         console.log("🔁 Student ready — resending callUser signal");

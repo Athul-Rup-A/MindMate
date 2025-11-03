@@ -9,9 +9,9 @@ import { Formik, Form as FormikForm } from 'formik';
 import * as Yup from 'yup';
 
 const AdminSignupSchema = Yup.object().shape({
-    AliasId: Yup.string()
-        .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
-        .required('Alias ID is required'),
+    Username: Yup.string()
+        .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Username must be 4–20 characters, alphanumeric or underscore only')
+        .required('Username is required'),
     FullName: Yup.string().required('Full name is required'),
     password: Yup.string()
         .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/, 'Minimum 10 characters with atleast 1 letter and 1 number, alphanumeric only')
@@ -31,7 +31,7 @@ const Signup = () => {
             await axios.post('/admin/signup', values);
             toast.success('Admin signup successful!');
             resetForm();
-            setTimeout(() => navigate('/admin/login'), 2500);
+            setTimeout(() => navigate('/login'), 2500);
         } catch (err) {
             const msg = err?.response?.data?.message || 'Signup failed';
 
@@ -87,7 +87,7 @@ const Signup = () => {
                     ) : (
                         <Formik
                             initialValues={{
-                                AliasId: '',
+                                Username: '',
                                 FullName: '',
                                 password: '',
                                 email: '',
@@ -103,7 +103,7 @@ const Signup = () => {
                                             <FormField
                                                 label={
                                                     <>
-                                                        Alias ID{' '}
+                                                        Username{' '}
                                                         <OverlayTrigger
                                                             placement="right"
                                                             overlay={<Tooltip>Use a nickname.<br></br> This will be your login ID</Tooltip>}
@@ -112,7 +112,7 @@ const Signup = () => {
                                                         </OverlayTrigger>
                                                     </>
                                                 }
-                                                name="AliasId"
+                                                name="Username"
                                                 placeholder="Ex. ADM001"
                                                 icon={<ClipboardFill />}
                                             />

@@ -7,7 +7,7 @@ import CustomTable from '../../components/CustomTable';
 import { toast } from 'react-toastify';
 
 const allowedTypes = ['video', 'article', 'podcast', 'guide'];
-const allowedLanguages = ['English', 'Hindi', 'Tamil', 'Malayalam'];
+const allowedLanguages = ['English', 'Malayalam'];
 const allowedTags = ['anxiety', 'study', 'sleep'];
 
 const validationSchema = Yup.object().shape({

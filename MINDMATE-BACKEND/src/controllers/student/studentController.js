@@ -1,18 +1,15 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
 const sendEmail = require('../../utils/autoEmail')
-const sendSMS = require('../../utils/sendSMS');
-const makeCall = require('../../utils/makeCall');
-const sendAppNotification = require('../../utils/sendAppNotification');
 
 const Student = require('../../models/Student');
 const Appointment = require('../../models/Appointment');
 const Vent = require('../../models/VentWall');
 const Feedback = require('../../models/Feedback');
-const SOSLog = require('../../models/SOSLog');
 const Resource = require('../../models/Resource');
 const Report = require('../../models/Report');
 const CounselorPsychologist = require('../../models/CounselorPsychologist');
@@ -21,14 +18,14 @@ const studentController = {
 
   // AUTH
   signupStudent: asyncHandler(async (req, res) => {
-    const { AliasId, password, phone, email } = req.body;
+    const { Username, password, phone, email } = req.body;
 
-    if (!AliasId || !password || !phone || !email) {
-      return res.status(400).json({ message: 'Alias ID, password and phone are required' });
+    if (!Username || !password || !phone || !email) {
+      return res.status(400).json({ message: 'Username, password and phone are required' });
     }
-    // AliasId validation: alphanumeric and 4-20 characters
-    if (!/^[a-zA-Z0-9_]{4,20}$/.test(AliasId)) {
-      return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
+    // Username validation: alphanumeric and 4-20 characters
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(Username)) {
+      return res.status(400).json({ message: 'Username must be 4–20 characters, alphanumeric or underscore only' });
     }
     // Password strength: at least 8 characters, with at least 1 letter and 1 number
     if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
@@ -44,9 +41,9 @@ const studentController = {
     if (!/^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(req.body.email)) {
       return res.status(400).json({ message: 'Invalid email format' });
     }
-    const existingStudent = await Student.findOne({ AliasId });
+    const existingStudent = await Student.findOne({ Username });
     if (existingStudent)
-      return res.status(400).json({ message: 'Alias ID already in use' });
+      return res.status(400).json({ message: 'Username already in use' });
 
     const existingPhone = await Student.findOne({ Phone: phone });
     if (existingPhone) {
@@ -60,7 +57,7 @@ const studentController = {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newStudent = await Student.create({
-      AliasId,
+      Username,
       PasswordHash: hashedPassword,
       Phone: phone,
       Email: email,
@@ -68,138 +65,6 @@ const studentController = {
 
     const token = generateToken({ _id: newStudent._id, role: 'student' });
     res.status(201).json({ token, student: newStudent });
-  }),
-
-  loginStudent: asyncHandler(async (req, res) => {
-    const { AliasId, password } = req.body;
-    if (!AliasId || !password) {
-      return res.status(400).json({ message: 'Alias ID and password are required' });
-    }
-    const student = await Student.findOne({ AliasId });
-    if (!student) return res.status(404).json({ message: 'Student not found' });
-
-    let isMatch = false;
-
-    if (student.isTempPassword) {
-      // 1. Check if temp password is expired    
-      if (!student.tempPasswordExpires || student.tempPasswordExpires < Date.now()) {
-        return res.status(403).json({ message: 'Temporary password expired. Please reset again.' });
-      }
-
-      // 2. Compare with tempPasswordHash (new separate field)
-      isMatch = await bcrypt.compare(password, student.tempPasswordHash);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-
-      // 3. Invalidate temp password after one use
-      student.isTempPassword = false;
-      student.tempPasswordExpires = null;
-      student.tempPasswordHash = null; // clear temp hash as well
-      await student.save();
-
-      // 4. Return token + flag to force password change on client side
-      return res.status(200).json({
-        token: generateToken({ _id: student._id, role: 'student' }),
-        student,
-        mustChangePassword: true,
-        message: 'Logged in with temporary password. Please change your password immediately.',
-      });
-    } else {
-      // 5. Check permanent password normally
-      isMatch = await bcrypt.compare(password, student.PasswordHash);
-      if (!isMatch)
-        return res.status(401).json({ message: 'Invalid credentials' });
-
-      const token = generateToken({ _id: student._id, role: 'student' });
-      return res.status(200).json({ token, student });
-    }
-  }),
-  forgotAliasIdByPhone: asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-
-    const student = await Student.findOne({ Phone: phone });
-    if (!student) return res.status(404).json({ message: 'No account found for this phone number' });
-
-    // Send SMS
-    sendSMS(phone, `Your Alias ID (Username) is: ${student.AliasId}`);
-
-    // Send Email if available
-    if (student.Email) {
-      await sendEmail({
-        to: student.Email,
-        subject: 'MindMate - Your Alias ID',
-        html: `<p>Hello,</p><p>Your Alias ID (username) is: <strong>${student.AliasId}</strong></p>`,
-      });
-    }
-
-    res.status(200).json({ message: 'Alias ID sent to your registered phone number and email.' });
-  }),
-
-  forgotPasswordByPhone: asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-
-    const student = await Student.findOne({ Phone: phone });
-    if (!student) return res.status(404).json({ message: 'No account found for this phone number' });
-
-    const tempPassword = Math.random().toString(36).slice(-8); // Simple temp password
-    const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
-
-    // Save temp password hash and flags
-    student.tempPasswordHash = hashedTempPassword;
-    student.isTempPassword = true;
-    student.tempPasswordExpires = Date.now() + 5 * 60 * 1000; // 5 mins expiry
-    await student.save();
-
-    // Send SMS
-    sendSMS(phone, `Your temporary password is: ${tempPassword}. It expires in 5 minutes.`);
-
-    // Send Email if available
-    if (student.Email) {
-      await sendEmail({
-        to: student.Email,
-        subject: 'MindMate - Temporary Password',
-        html: `
-        <p>Hello,</p>
-        <p>Your temporary password is: <strong>${tempPassword}</strong></p>
-        <p>This password will expire in 5 minutes and can be used only once.</p>
-        <p>Please log in and reset your password immediately.</p>
-      `,
-      });
-    }
-
-    res.status(200).json({ message: 'Temporary password sent to your registered phone number and email.' });
-  }),
-
-  setNewPassword: asyncHandler(async (req, res) => {
-    const { userId, newPassword } = req.body;
-    if (!userId || !newPassword) {
-      return res.status(400).json({ message: 'User ID and new password required' });
-    }
-
-    if (!/^(?=.[A-Za-z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
-      return res.status(400).json({
-        message: 'Password must be at least 8 characters long and contain at least one letter and one number',
-      });
-    }
-
-    const student = await Student.findById(userId);
-    if (!student) return res.status(404).json({ message: 'Student not found' });
-
-    const isSame = await bcrypt.compare(newPassword, student.PasswordHash);
-    if (isSame) {
-      return res.status(400).json({ message: 'New password must be different from the old one.' });
-    }
-
-    student.PasswordHash = await bcrypt.hash(newPassword, 10);
-    student.isTempPassword = false;
-    student.tempPasswordExpires = null;
-    student.tempPasswordHash = null; // clear temp hash as well
-
-    await student.save();
-    res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
   }),
 
   getAvailableCounselorPsychologist: asyncHandler(async (req, res) => {
@@ -214,7 +79,7 @@ const studentController = {
   getCounselorPsychologistById: asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const user = await CounselorPsychologist.findById(id).select('FullName AliasId Specialization');
+    const user = await CounselorPsychologist.findById(id).select('FullName Username Specialization');
     if (!user) {
       return res.status(404).json({ message: 'Counselor/Psychologist not found' });
     }
@@ -258,7 +123,7 @@ const studentController = {
     });
   }),
 
-  changePassword: asyncHandler(async (req, res) => {
+  requestPasswordChange: asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -266,63 +131,102 @@ const studentController = {
     }
 
     const student = await Student.findById(req.user._id);
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
+    if (!student) return res.status(404).json({ message: 'Student not found' });
 
     const isMatch = await bcrypt.compare(currentPassword, student.PasswordHash);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Current password is incorrect' });
-    }
+    if (!isMatch) return res.status(401).json({ message: 'Current password incorrect' });
 
-    // Password strength for new password
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/.test(newPassword)) {
-      return res.status(400).json({
-        message: 'New password must be at least 8 characters long and include at least one letter and one number',
-      });
-    }
-
-    // Check if new password is the same as current password
     const isSameAsOld = await bcrypt.compare(newPassword, student.PasswordHash);
-    if (isSameAsOld) {
-      return res.status(400).json({ message: 'New password must be different from the old one' });
-    }
+    if (isSameAsOld) return res.status(400).json({ message: 'New password must be different' });
 
-    const salt = await bcrypt.genSalt(10);
-    student.PasswordHash = await bcrypt.hash(newPassword, salt);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
 
+    student.pendingPasswordChange = { newPasswordHash: hashedNewPassword, token, expiresAt };
     await student.save();
 
-    res.status(200).json({ message: 'Password updated successfully' });
+    const verifyLink = `${process.env.FRONTEND_URL}/students/verify-password-change/${token}`;
+    await sendEmail({
+      to: student.Email,
+      subject: 'Confirm Password Change',
+      html: `<p>Click <a href="${verifyLink}">here</a> to confirm your password change.</p>
+           <p>If you didn't request this, change your password immediately.</p>`
+    });
+
+    res.status(200).json({ message: 'Verification email sent. Please check your inbox.' });
   }),
 
-  updateProfile: asyncHandler(async (req, res) => {
-    const updates = req.body;
+  verifyPasswordChange: asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    const student = await Student.findOne({ 'pendingPasswordChange.token': token });
+    if (!student) return res.status(400).json({ message: 'Invalid or expired token' });
+
+    if (student.pendingPasswordChange.expiresAt < new Date()) {
+      student.pendingPasswordChange = undefined;
+      await student.save();
+      return res.status(400).json({ message: 'Token expired' });
+    }
+
+    student.PasswordHash = student.pendingPasswordChange.newPasswordHash;
+    student.pendingPasswordChange = undefined;
+    await student.save();
+
+    res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
+  }),
+
+  updateProfileRequest: asyncHandler(async (req, res) => {
     const allowedFields = ['Phone', 'Email'];
-    const updateKeys = Object.keys(updates);
+    const updates = req.body;
 
-    // Check for invalid fields
-    const isValidUpdate = updateKeys.every(key => allowedFields.includes(key));
-    if (!isValidUpdate) {
-      return res.status(400).json({ message: 'Invalid update fields' });
+    if (!Object.keys(updates).every(field => allowedFields.includes(field))) {
+      return res.status(400).json({ message: 'Invalid fields in update' });
     }
 
-    // Validate Phone
-    if (updates.Phone && !/^\+?\d{7,15}$/.test(updates.Phone)) {
-      return res.status(400).json({ message: 'Phone must be a valid phone number' });
+    const student = await Student.findById(req.user._id);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+
+    // Save pending updates
+    student.pendingUpdates = { ...updates, token, expiresAt };
+    await student.save();
+
+    // Send verification email
+    const verifyLink = `${process.env.FRONTEND_URL}/students/verify-profile-update/${token}`;
+    await sendEmail({
+      to: student.Email,
+      subject: 'Verify Your Profile Update',
+      html: `<p>Click <a href="${verifyLink}">here</a> to verify your profile update.</p>
+           <p>If you didn't request this, someone else might be using your account. Change your password immediately.</p>`
+    });
+
+    res.status(200).json({ message: 'Verification email sent. Please check your inbox.' });
+  }),
+
+  verifyProfileUpdate: asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    const student = await Student.findOne({ 'pendingUpdates.token': token });
+    if (!student) return res.status(400).json({ message: 'Invalid or expired token' });
+
+    if (student.pendingUpdates.expiresAt < new Date()) {
+      student.pendingUpdates = undefined;
+      await student.save();
+      return res.status(400).json({ message: 'Token expired' });
     }
 
-    // Validate Email
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (updates.Email && !emailRegex.test(updates.Email)) {
-      return res.Email(400).json({ message: 'Invalid email value' });
-    }
+    const { Phone, Email } = student.pendingUpdates;
+    if (Phone) student.Phone = Phone;
+    if (Email) student.Email = Email;
 
-    const updated = await Student.findByIdAndUpdate(req.user._id, updates, {
-      new: true,
-    }).select('-PasswordHash');
+    student.pendingUpdates = undefined;
+    await student.save();
 
-    res.status(200).json(updated);
+    res.status(200).json({ message: 'Profile updated successfully' });
   }),
 
   // APPOINTMENTS
@@ -382,7 +286,7 @@ const studentController = {
 
   getMyAppointments: asyncHandler(async (req, res) => {
     const appointments = await Appointment.find({ StudentId: req.user._id })
-      .populate('CounselorPsychologistId', 'FullName Role')
+      .populate('CounselorPsychologistId', 'FullName  Specialization Role AvailabilitySlots')
       .sort({ SlotDate: -1 });
 
     if (!appointments) {
@@ -448,18 +352,63 @@ const studentController = {
 
   cancelAppointment: asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const { reason } = req.body;
+    const studentId = req.user._id;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid appointment ID' });
+    const appointment = await Appointment.findById(id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
     }
 
-    const appointment = await Appointment.findOneAndDelete({
-      _id: id,
-      StudentId: req.user._id,
+    if (appointment.StudentId.toString() !== studentId) {
+      return res.status(403).json({ message: 'Unauthorized action' });
+    }
+
+    // Get student and counselor details
+    const student = await Student.findById(studentId);
+    const counselor = await CounselorPsychologist.findById(appointment.CounselorPsychologistId);
+
+    console.log("Appointment cancel details:");
+    console.log({
+      counselorEmail: counselor?.Email,
+      studentUsername: student?.Username,
+      counselorName: counselor?.FullName,
+      slotDate: appointment?.SlotDate,
+      slotStart: appointment?.SlotStartTime,
+      slotEnd: appointment?.SlotEndTime,
+      reason
     });
-    if (!appointment)
-      return res.status(404).json({ message: 'Appointment not found' });
-    res.status(200).json({ message: 'Appointment canceled' });
+
+    if (counselor && counselor.Email) {
+
+      try {
+        await sendEmail({
+          to: counselor.Email,
+          subject: `Appointment Cancelled by ${student.Username}`,
+          html: `
+        <h3>Appointment Cancellation Notice</h3>
+        <p>Dear ${counselor.FullName || 'Counselor'},</p>
+        <p>The student <b>${student.Username}</b> has cancelled their appointment.</p>
+        <p><b>Original Appointment Details:</b></p>
+        <ul>
+        <li><b>Date:</b> ${appointment.Date}</li>
+        <li><b>Time:</b> ${appointment.StartTime} - ${appointment.EndTime}</li>
+        </ul>
+        ${reason ? `<p><b>Reason:</b> ${reason}</p>` : ''}
+        <br/>
+        <p>Please update your schedule accordingly.</p>
+        <p>Regards,<br/>MindMate System</p>
+        `,
+        });
+      } catch (err) {
+        console.log('Email not sent: sendgrid', err.message);
+      }
+    }
+
+    await Appointment.findByIdAndDelete(id);
+
+    res.json({ message: 'Appointment deleted and counselor notified by email.' });
   }),
 
   // VENTS
@@ -614,7 +563,7 @@ const studentController = {
     }
 
     // Validate Type
-    const validTypes = ['session', 'platform', 'content', 'SOS'];
+    const validTypes = ['session', 'platform', 'content'];
     if (!Type || !validTypes.includes(Type)) {
       return res.status(400).json({ message: 'Invalid or missing feedback type' });
     }
@@ -680,6 +629,34 @@ const studentController = {
     res.status(200).json(feedbacks);
   }),
 
+  getCounPsychRatings: asyncHandler(async (req, res) => {
+    const ratings = await Feedback.aggregate([
+      {
+        $match: {
+          Type: 'session',
+          CounselorPsychologistId: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$CounselorPsychologistId',
+          averageRating: { $avg: '$Rating' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          counPsychId: '$_id',
+          averageRating: { $round: ['$averageRating', 1] },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    res.json(ratings);
+  }),
+
   updateFeedback: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
@@ -704,7 +681,7 @@ const studentController = {
     }
 
     if (updateData.Type) {
-      const validTypes = ['session', 'platform', 'content', 'SOS'];
+      const validTypes = ['session', 'platform', 'content'];
       if (!validTypes.includes(updateData.Type)) {
         return res.status(400).json({ message: 'Invalid feedback type' });
       }
@@ -734,345 +711,12 @@ const studentController = {
     res.status(200).json({ message: 'Feedback deleted' });
   }),
 
-  // SOS
-  triggerSOS: asyncHandler(async (req, res) => {
-    const { AlertedTo, Method } = req.body;
-    if (!AlertedTo || !Array.isArray(AlertedTo) || AlertedTo.length === 0)
-      return res
-        .status(400)
-        .json({ message: 'AlertedTo array with at least one entry required' });
-
-    // Validate each AlertedTo entry as ObjectId
-    const invalidIds = AlertedTo.filter(
-      (id) => !mongoose.Types.ObjectId.isValid(id)
-    );
-    if (invalidIds.length > 0) {
-      return res.status(400).json({
-        message: 'One or more AlertedTo IDs are invalid',
-        invalidIds,
-      });
-    }
-
-    // Validate Method
-    const validMethods = ['call', 'sms', 'app'];
-    if (!Method || !validMethods.includes(Method)) {
-      return res.status(400).json({
-        message: 'Method must be one of: call, sms, app',
-      });
-    }
-
-    const sos = await SOSLog.create({
-      StudentId: req.user._id,
-      AlertedTo,
-      Method,
-      TriggeredAt: new Date(),
-    });
-
-    const recipients = await CounselorPsychologist.find({ _id: { $in: AlertedTo } });
-
-    for (const { _id, Phone } of recipients) {
-      const formattedPhone = Phone.startsWith('+') ? Phone : `+91${Phone.trim()}`;
-      const message = `🚨 SOS Alert: A student has triggered an SOS via ${Method.toUpperCase()}. Please respond immediately.`;
-
-      if (Method === 'sms') {
-        await sendSMS(formattedPhone, message);
-      } else if (Method === 'call') {
-        await makeCall(formattedPhone);
-      } else if (Method === 'app') {
-        await sendAppNotification(_id, message);
-      }
-    };
-
-    res.status(201).json({ message: 'SOS triggered and delivered', sos });
-  }),
-
   getAllApprovedCounselorPsychologist: asyncHandler(async (req, res) => {
     const counselorPsychologist = await CounselorPsychologist.find({
       Status: 'active',
       ApprovedByAdmin: true,
     }).select('_id FullName Specialization');
     res.status(200).json(counselorPsychologist);
-  }),
-
-  getMySOSLogs: asyncHandler(async (req, res) => {
-    const soslogs = await SOSLog.find({ StudentId: req.user._id }).sort({
-      TriggeredAt: -1,
-    });
-
-    if (!soslogs) {
-      return res.status(404).json({ message: 'SOS not found' });
-    }
-
-    res.status(200).json(soslogs);
-  }),
-
-  deleteSOSLog: asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid SOS Log ID' });
-    }
-
-    const deleted = await SOSLog.findOneAndDelete({
-      _id: id,
-      StudentId: req.user._id,
-    });
-    if (!deleted) return res.status(404).json({ message: 'SOS Log not found' });
-    res.status(200).json({ message: 'SOS Log deleted' });
-  }),
-
-  // WELLNESS (MOOD)
-  addMoodEntry: asyncHandler(async (req, res) => {
-    const { Date: dateString, Mood, Note, Tags } = req.body;
-    const validMoods = ['happy', 'sad', 'stressed', 'anxious', 'motivated'];
-    const validTags = ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic'];
-
-    if (!Mood) return res.status(400).json({ message: 'Mood is required' });
-
-    if (!validMoods.includes(Mood)) {
-      return res.status(400).json({ message: 'Invalid mood value' });
-    }
-
-    if (Tags && (!Array.isArray(Tags) || Tags.some(tag => !validTags.includes(tag)))) {
-      return res.status(400).json({ message: 'Invalid tags provided' });
-    }
-
-    if (dateString && isNaN(Date.parse(dateString))) {
-      return res.status(400).json({ message: 'Invalid date format' });
-    }
-
-    const student = await Student.findById(req.user._id);
-
-    const moodDate = new Date(dateString || new Date());
-    const existingIndex = student.MoodEntries.findIndex(entry => {
-      const existingDate = new Date(entry.Date);
-      return (
-        existingDate.getFullYear() === moodDate.getFullYear() &&
-        existingDate.getMonth() === moodDate.getMonth() &&
-        existingDate.getDate() === moodDate.getDate()
-      );
-    });
-
-    if (existingIndex !== -1) {
-      // Replace existing entry
-      student.MoodEntries[existingIndex] = {
-        ...student.MoodEntries[existingIndex],
-        Mood,
-        Note,
-        Tags,
-        Date: moodDate
-      };
-    } else {
-      // Add new entry
-      student.MoodEntries.push({
-        _id: new mongoose.Types.ObjectId(),
-        Date: moodDate,
-        Mood,
-        Note,
-        Tags
-      });
-    }
-
-    await student.save();
-    res.status(201).json(student.MoodEntries);
-  }),
-
-  getMoodEntries: asyncHandler(async (req, res) => {
-    const student = await Student.findById(req.user._id).lean();
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    const sortedMoods = [...student.MoodEntries].sort((a, b) => new Date(b.Date) - new Date(a.Date));
-
-    res.status(200).json(sortedMoods);
-  }),
-
-  updateMoodEntry: asyncHandler(async (req, res) => {
-    const index = parseInt(req.params.index, 10);
-    const { Date, Mood, Note, Tags } = req.body;
-
-    const validMoods = ['happy', 'sad', 'stressed', 'anxious', 'motivated'];
-    const validTags = ['productive', 'positive', 'tired', 'focussed', 'lonely', 'social', 'bored', 'energetic'];
-
-    if (isNaN(index))
-      return res.status(400).json({ message: 'Invalid index' });
-
-    const student = await Student.findById(req.user._id);
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    if (index < 0 || index >= student.MoodEntries.length)
-      return res.status(404).json({ message: 'Mood entry not found' });
-
-    if (Date && isNaN(Date.parse(Date))) {
-      return res.status(400).json({ message: 'Invalid date format' });
-    }
-
-    if (Mood && !validMoods.includes(Mood)) {
-      return res.status(400).json({ message: 'Invalid mood value' });
-    }
-
-    if (Tags && (!Array.isArray(Tags) || Tags.some(tag => !validTags.includes(tag)))) {
-      return res.status(400).json({ message: 'Invalid tags provided' });
-    }
-
-    if (Date) student.MoodEntries[index].Date = new Date(Date);
-    if (Mood) student.MoodEntries[index].Mood = Mood;
-    if (Note !== undefined) student.MoodEntries[index].Note = Note;
-    if (Tags) student.MoodEntries[index].Tags = Tags;
-
-    await student.save();
-    res.status(200).json(student.MoodEntries[index]);
-  }),
-
-  deleteMoodEntry: asyncHandler(async (req, res) => {
-    const index = parseInt(req.params.index, 10);
-    if (isNaN(index))
-      return res.status(400).json({ message: 'Invalid index' });
-
-    const student = await Student.findById(req.user._id);
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    if (index < 0 || index >= student.MoodEntries.length)
-      return res.status(404).json({ message: 'Mood entry not found' });
-
-    student.MoodEntries.splice(index, 1);
-    await student.save();
-
-    res.status(200).json({ message: 'Mood entry deleted' });
-  }),
-
-  // WELLNESS (HABIT)
-  addHabitLog: asyncHandler(async (req, res) => {
-    const { Exercise, Hydration, ScreenTime, SleepHours } = req.body;
-
-    if (
-      Hydration !== undefined && (typeof Hydration !== 'number' || Hydration < 0 || Hydration > 10000) ||
-      ScreenTime !== undefined && (typeof ScreenTime !== 'number' || ScreenTime < 0 || ScreenTime > 24) ||
-      SleepHours !== undefined && (typeof SleepHours !== 'number' || SleepHours < 0 || SleepHours > 24) ||
-      Exercise !== undefined && typeof Exercise !== 'boolean'
-    ) {
-      return res.status(400).json({ message: 'Invalid values provided' });
-    }
-
-    const student = await Student.findById(req.user._id);
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const existingIndex = student.HabitLogs.findIndex(log => {
-      const logDate = new Date(log.Date);
-      logDate.setHours(0, 0, 0, 0);
-      return logDate.getTime() === today.getTime();
-    });
-
-    const habitLog = {
-      Date: today,
-      Exercise: Exercise ?? false,
-      Hydration: Hydration ?? 0,
-      ScreenTime: ScreenTime ?? 0,
-      SleepHours: SleepHours ?? 0,
-    };
-
-    if (existingIndex !== -1) {
-      // Update existing habit log for today
-      student.HabitLogs[existingIndex] = habitLog;
-    } else {
-      // Add new habit log for today
-      student.HabitLogs.push(habitLog);
-    }
-
-    await student.save();
-    res.status(201).json(student.HabitLogs);
-  }),
-
-  getHabitLogs: asyncHandler(async (req, res) => {
-    const student = await Student.findById(req.user._id).lean();
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    const sortedHabits = [...student.HabitLogs].sort((a, b) => new Date(b.Date) - new Date(a.Date));
-
-    res.status(200).json(sortedHabits);
-  }),
-
-  updateHabitLog: asyncHandler(async (req, res) => {
-    const index = parseInt(req.params.index, 10);
-    const { Date: dateString, Exercise, Hydration, ScreenTime, SleepHours } = req.body;
-
-    if (isNaN(index))
-      return res.status(400).json({ message: 'Invalid index' });
-
-    const student = await Student.findById(req.user._id);
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    if (index < 0 || index >= student.HabitLogs.length) {
-      return res.status(404).json({ message: 'Habit log not found' });
-    }
-
-    if (dateString && isNaN(Date.parse(dateString))) {
-      return res.status(400).json({ message: 'Invalid date format' });
-    }
-
-    if (
-      Hydration !== undefined && (typeof Hydration !== 'number' || Hydration < 0 || Hydration > 10000) ||
-      ScreenTime !== undefined && (typeof ScreenTime !== 'number' || ScreenTime < 0 || ScreenTime > 24) ||
-      SleepHours !== undefined && (typeof SleepHours !== 'number' || SleepHours < 0 || SleepHours > 24) ||
-      Exercise !== undefined && typeof Exercise !== 'boolean'
-    ) {
-      return res.status(400).json({ message: 'Invalid values provided' });
-    }
-
-    const log = student.HabitLogs[index];
-    if (!log)
-      return res.status(404).json({ message: 'Habit log not found' });
-    if (dateString) log.Date = new Date(dateString);
-    if (Exercise !== undefined) log.Exercise = Exercise;
-    if (Hydration !== undefined) log.Hydration = Hydration;
-    if (ScreenTime !== undefined) log.ScreenTime = ScreenTime;
-    if (SleepHours !== undefined) log.SleepHours = SleepHours;
-
-    await student.save();
-    res.status(200).json(log);
-  }),
-
-  deleteHabitLog: asyncHandler(async (req, res) => {
-    const index = parseInt(req.params.index, 10);
-    if (isNaN(index))
-      return res.status(400).json({ message: 'Invalid index' });
-
-    const student = await Student.findById(req.user._id);
-
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
-    }
-
-    if (index < 0 || index >= student.HabitLogs.length) {
-      return res.status(404).json({ message: 'Habit log not found' });
-    }
-
-    if (!student.HabitLogs[index])
-      return res.status(404).json({ message: 'Habit log not found' });
-
-    student.HabitLogs.splice(index, 1);
-    await student.save();
-
-    res.status(200).json({ message: 'Habit log deleted' });
   }),
 
   // RESOURCES (VIEW ONLY)
@@ -1100,7 +744,7 @@ const studentController = {
 
   // REPORTS
   createReport: asyncHandler(async (req, res) => {
-    const { TargetId, TargetAliasId, TargetType, Reason } = req.body;
+    const { TargetId, TargetUsername, TargetType, Reason, OtherReason } = req.body;
 
     if (!TargetId || !Reason) {
       return res.status(400).json({ message: 'TargetId and Reason are required' });
@@ -1110,25 +754,78 @@ const studentController = {
       return res.status(400).json({ message: 'Invalid TargetId format' });
     }
 
-    const validReasons = ['spam', 'abuse', 'offensive', 'harassment', 'misinformation'];
+    const validReasons = ['spam', 'abuse', 'offensive', 'harassment', 'misinformation', 'other'];
     if (!validReasons.includes(Reason)) {
       return res.status(400).json({ message: 'Invalid Reason value' });
     }
 
-    const validTypes = ['CounselorPsychologist', 'Resource', 'Vent'];
+    const validTypes = ['CounselorPsychologist', 'Resource'];
     if (!validTypes.includes(TargetType)) {
       return res.status(400).json({ message: 'Invalid TargetType' });
+    }
+
+    // if Reason is 'other', ensure OtherReason is present
+    let finalReason = Reason;
+    let otherReasonField = undefined;
+    if (Reason === 'other') {
+      if (!OtherReason || String(OtherReason).trim().length < 3) {
+        return res.status(400).json({ message: 'Please provide a custom reason for "other".' });
+      }
+
+      otherReasonField = OtherReason.trim();
     }
 
     const report = await Report.create({
       ReporterId: req.user._id,
       TargetId,
-      TargetAliasId: TargetType === 'CounselorPsychologist' ? TargetAliasId : undefined,
+      TargetUsername: TargetType === 'CounselorPsychologist' ? TargetUsername : undefined,
       TargetType,
-      Reason,
+      Reason: finalReason,
+      OtherReason: otherReasonField,
     });
 
-    res.status(201).json(report);
+    let targetUserEmail = null;
+    let targetUserName = "";
+
+    // CounselorPsychologist
+    if (TargetType === 'CounselorPsychologist') {
+      const target = await CounselorPsychologist.findById(TargetId);
+      targetUserEmail = target?.Email;
+      targetUserName = target?.FullName || "Counselor";
+    }
+
+    // Resource
+    if (TargetType === 'Resource') {
+      const resource = await Resource.findById(TargetId).populate("CreatedBy", "Email Username");
+      targetUserEmail = resource?.CreatedBy?.Email;
+      targetUserName = resource?.CreatedBy?.Username || "User";
+    }
+
+    if (targetUserEmail) {
+      const reporter = await Student.findById(req.user._id).select("Username");
+
+      try {
+        await sendEmail({
+          to: targetUserEmail,
+          subject: `⚠️ You have been reported on MindMate`,
+          html: `
+          <h3>Report Notification</h3>
+          <p>Dear ${targetUserName},</p>
+          <p>This is to inform you that you have been reported by (<b>${reporter?.Username}</b>).</p>
+          <p><b>Reason:</b> ${Reason}</p>
+          ${OtherReason ? `<p><b>Details:</b> ${OtherReason}</p>` : ''}
+          <p>The MindMate admin team will review the report shortly.</p>
+          <br/>
+          <p>Regards,<br/>MindMate Support Team</p>
+          `,
+        });
+        console.log(`Report email sent to ${targetUserEmail}`);
+      } catch (err) {
+        console.error('Email not sent:', err.message);
+      }
+    }
+
+    res.status(201).json({ message: 'Report submitted and target notified via email', report });
   }),
 
   getMyReports: asyncHandler(async (req, res) => {
@@ -1143,7 +840,7 @@ const studentController = {
 
           if (report.TargetType === 'CounselorPsychologist') {
             try {
-              const counselor = await CounselorPsychologist.findOne({ AliasId: report.TargetAliasId }).lean();
+              const counselor = await CounselorPsychologist.findOne({ Username: report.TargetUsername }).lean();
 
               if (!counselor) {
                 targetName = 'N/A';
@@ -1166,20 +863,10 @@ const studentController = {
             }
           }
 
-          else if (report.TargetType === 'Vent') {
-            try {
-              if (mongoose.Types.ObjectId.isValid(report.TargetId)) {
-                const vent = await Vent.findById(String(report.TargetId)).lean();
-                if (vent) targetName = vent.Topic || 'Untitled Vent';
-              }
-            } catch (err) {
-              res.status(500).json({ message: 'Error fetching vent:', err });
-            }
-          }
-
           return {
             ...report,
             TargetName: targetName,
+            DisplayReason: report.Reason === 'other' ? (report.OtherReason || 'Other') : report.Reason
           };
         })
       );
@@ -1202,7 +889,7 @@ const studentController = {
       return res.status(404).json({ message: 'Report not found' });
     }
 
-    // Ensure only the user who created the report can delete it
+    // Only the user who created the report can delete it
     if (!report.ReporterId.equals(req.user._id)) {
       return res.status(403).json({ message: 'Unauthorized to delete this report' });
     }

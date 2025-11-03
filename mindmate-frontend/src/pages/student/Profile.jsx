@@ -8,19 +8,19 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 
 const Profile = () => {
-  const [profile, setProfile] = useState({ AliasId: '', Phone: '', Email: '' });
+  const [profile, setProfile] = useState({ Username: '', Phone: '', Email: '' });
   const [loading, setLoading] = useState(true);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/profile`, authHeader());
         setProfile({
-          AliasId: res.data.AliasId || '',
+          Username: res.data.Username || '',
           Phone: res.data.Phone || '',
           Email: res.data.Email || '',
         });
@@ -70,14 +70,13 @@ const Profile = () => {
               enableReinitialize
               validationSchema={profileSchema}
               onSubmit={async (values) => {
-                if (values.Phone === profile.Phone || values.Email === profile.Email) {
+                if (values.Phone === profile.Phone && values.Email === profile.Email) {
                   toast.info('No changes made');
                   return;
                 }
                 try {
-                  await axios.put(`${BASE_URL}/profile`, values, authHeader());
-                  toast.success('Profile updated successfully');
-                  setProfile((prev) => ({ ...prev, Phone: values.Phone, Email: values.Email }));
+                  const res = await axios.post(`${BASE_URL}/request-profile-update`, values, authHeader());
+                  toast.success('Verification email sent. Please check your inbox to confirm changes.');
                 } catch (err) {
                   toast.error('Error updating profile, try a new one');
                 }
@@ -86,8 +85,8 @@ const Profile = () => {
               {({ isSubmitting }) => (
                 <Form>
                   <div className="mb-3">
-                    <label className="form-label">Alias ID</label>
-                    <input type="text" className="form-control" value={profile.AliasId} disabled />
+                    <label className="form-label">Username</label>
+                    <input type="text" className="form-control" value={profile.Username} disabled />
                   </div>
                   <div className="mb-3">
                     <label className="form-label">Phone</label>
@@ -129,8 +128,8 @@ const Profile = () => {
               validationSchema={passwordSchema}
               onSubmit={async (values, { resetForm }) => {
                 try {
-                  const res = await axios.put(`${BASE_URL}/change-profile-password`, values, authHeader());
-                  toast.success(res.data.message);
+                  const res = await axios.post(`${BASE_URL}/request-password-change`, values, authHeader());
+                  toast.success('Verification email sent. Please check your inbox to confirm password change.');
                   resetForm();
                 } catch (err) {
                   toast.error(err.response?.data?.message || 'Failed to change password');

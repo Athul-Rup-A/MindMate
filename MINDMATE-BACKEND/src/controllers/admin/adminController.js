@@ -1,22 +1,21 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const asyncHandler = require('../../utils/asyncHandler');
 const { generateToken } = require('../../config/jwt');
 
 const sendEmail = require('../../utils/autoEmail')
-const sendSMS = require('../../utils/sendSMS');
-const generateTempPassword = require('../../utils/tempPassGen')
 
 const Admin = require('../../models/Admin');
 const CounselorPsychologist = require('../../models/CounselorPsychologist');
 const Feedback = require('../../models/Feedback');
 const Report = require('../../models/Report');
 const Resource = require('../../models/Resource');
-const SOS = require('../../models/SOSLog')
 const Student = require('../../models/Student')
 const Vent = require('../../models/VentWall');
+const Appointment = require('../../models/Appointment')
 
 const regex = {
-  aliasId: /^[a-zA-Z0-9_]{4,20}$/,
+  username: /^[a-zA-Z0-9_]{4,20}$/,
   password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{10,}$/,
   phone: /^[6-9]\d{9}$/,
   email: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
@@ -32,14 +31,14 @@ const AdminController = {
       return res.status(403).json({ message: 'Signup not allowed. Admin already exists.' });
     };
 
-    const { AliasId, FullName, password, phone, email } = req.body;
+    const { Username, FullName, password, phone, email } = req.body;
     const role = 'admin';
 
-    if (!AliasId || !FullName || !password || !phone || !email) {
+    if (!Username || !FullName || !password || !phone || !email) {
       return res.status(400).json({ message: 'All fields required' });
     };
-    if (!regex.aliasId.test(AliasId)) {
-      return res.status(400).json({ message: 'Alias ID must be 4–20 characters, alphanumeric or underscore only' });
+    if (!regex.username.test(Username)) {
+      return res.status(400).json({ message: 'Username must be 4–20 characters, alphanumeric or underscore only' });
     };
     if (!regex.password.test(password)) {
       return res.status(400).json({ message: 'Password must be at least 10 characters long and contain at least one letter and one number' });
@@ -51,9 +50,9 @@ const AdminController = {
       return res.status(400).json({ message: 'Invalid email format' });
     };
 
-    const existingUser = await Admin.findOne({ AliasId });
+    const existingUser = await Admin.findOne({ Username });
     if (existingUser) {
-      return res.status(409).json({ message: 'Alias ID already exists' });
+      return res.status(409).json({ message: 'Username already exists' });
     };
     const existingPhone = await Admin.findOne({ Phone: phone });
     if (existingPhone) {
@@ -67,7 +66,7 @@ const AdminController = {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newAdmin = await Admin.create({
-      AliasId,
+      Username,
       FullName,
       PasswordHash: hashedPassword,
       Role: role,
@@ -79,130 +78,6 @@ const AdminController = {
     res.status(201).json({ token, user: newAdmin });
   }),
 
-  loginAdmin: asyncHandler(async (req, res) => {
-    const { AliasId, password } = req.body;
-
-    if (!AliasId || !password) {
-      return res.status(400).json({ message: 'Alias ID and password are required' });
-    };
-
-    const user = await Admin.findOne({ AliasId });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    let isMatch = false;
-
-    if (user.isTempPassword) {
-      if (!user.tempPasswordExpires || user.tempPasswordExpires < Date.now()) {
-        return res.status(403).json({ message: 'Temporary password expired. Please reset again.' });
-      }
-
-      isMatch = await bcrypt.compare(password, user.tempPasswordHash);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-
-      user.isTempPassword = false;
-      user.tempPasswordExpires = null;
-      user.tempPasswordHash = null;
-      await user.save();
-
-      return res.status(200).json({
-        token: generateToken({ _id: user._id, role: user.Role }),
-        user,
-        mustChangePassword: true,
-        message: 'Logged in with temporary password. Please change your password immediately.',
-      });
-    } else {
-      isMatch = await bcrypt.compare(password, user.PasswordHash);
-      if (!isMatch)
-        return res.status(401).json({ message: 'Invalid credentials' });
-
-      const token = generateToken({ _id: user._id, role: user.Role });
-      res.status(200).json({ token, user });
-    };
-  }),
-
-  forgotAliasIdByPhone: asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-
-    const user = await Admin.findOne({ Phone: phone });
-    if (!user)
-      return res.status(404).json({ message: 'No account found for this phone number' });
-
-    sendSMS(phone, `Your Alias ID is: ${user.AliasId}`);
-    if (user.Email) {
-      await sendEmail({
-        to: user.Email,
-        subject: 'MindMate - Alias ID',
-        html: `<p>Hello,</p><p>Your Alias ID is: <strong>${user.AliasId}</strong></p>`,
-      });
-    };
-
-    res.status(200).json({ message: 'Alias ID sent to your registered phone and email' });
-  }),
-
-  forgotPasswordByPhone: asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
-
-    const user = await Admin.findOne({ Phone: phone });
-    if (!user)
-      return res.status(404).json({ message: 'No account found for this phone number' });
-
-    const tempPassword = generateTempPassword();
-    const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
-
-    user.tempPasswordHash = hashedTempPassword;
-    user.isTempPassword = true;
-    user.tempPasswordExpires = Date.now() + 5 * 60 * 1000;
-    await user.save();
-
-    sendSMS(phone, `Your temporary password is: ${tempPassword}. It expires in 5 minutes.`);
-    if (user.Email) {
-      await sendEmail({
-        to: user.Email,
-        subject: 'MindMate - Temporary Password',
-        html: `<p>Your temporary password is: <strong>${tempPassword}</strong></p>
-                <p>This password will expire in 5 minutes and can be used only once.</p>
-        <p>Please log in and reset your password immediately.</p>
-                `,
-      });
-    };
-
-    res.status(200).json({ message: 'Temporary password sent to your registered phone and email.' });
-  }),
-
-  setNewPassword: asyncHandler(async (req, res) => {
-    const { userId, newPassword } = req.body;
-
-    if (!userId || !newPassword) {
-      return res.status(400).json({ message: 'User ID and new password required' });
-    };
-
-    if (!regex.password.test(newPassword)) {
-      return res.status(400).json({
-        message: 'Password must be at least 10 characters long and contain at least one letter and one number',
-      });
-    };
-
-    const user = await Admin.findById(userId);
-    if (!user)
-      return res.status(404).json({ message: 'User not found' });
-
-    const isSame = await bcrypt.compare(newPassword, user.PasswordHash);
-    if (isSame)
-      return res.status(400).json({ message: 'New password must differ from old' });
-
-    user.PasswordHash = await bcrypt.hash(newPassword, 10);
-    user.tempPasswordHash = null;
-    user.isTempPassword = false;
-    user.tempPasswordExpires = null;
-
-    await user.save();
-    res.status(200).json({ message: 'Password updated successfully. Please log in again.' });
-  }),
-
   // PROFILE
   getProfile: asyncHandler(async (req, res) => {
     const user = await Admin.findById(req.user._id).select('-PasswordHash -tempPasswordHash');
@@ -210,76 +85,150 @@ const AdminController = {
     res.status(200).json(user);
   }),
 
-  updateProfile: asyncHandler(async (req, res) => {
+  updateProfileRequest: asyncHandler(async (req, res) => {
     const allowed = ['Phone', 'Email'];
     const updates = req.body;
 
     const isValid = Object.keys(updates).every(field => allowed.includes(field));
-    if (!isValid) {
-      return res.status(400).json({ message: 'Invalid update fields' });
-    };
-    if (updates.Phone && !regex.phone.test(updates.Phone)) {
-      return res.status(400).json({ message: 'Phone must be a valid phone number' });
-    };
-    if (updates.Email && !regex.email.test(updates.Email)) {
-      return res.status(400).json({ message: 'Email format is invalid' });
-    };
+    if (!isValid) return res.status(400).json({ message: 'Invalid update fields' });
 
-    const updated = await Admin.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-PasswordHash');
-    res.status(200).json(updated);
+    const admin = await Admin.findById(req.user._id);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+
+    admin.pendingUpdates = { ...updates, token, expiresAt };
+    await admin.save();
+
+    const verifyLink = `${process.env.FRONTEND_URL}/admin/verify-profile-update/${token}`;
+
+    await sendEmail({
+      to: admin.Email,
+      subject: 'Verify Admin Profile Update',
+      html: `<p>Click <a href="${verifyLink}">here</a> to verify your admin profile update.</p>`
+    });
+
+    res.status(200).json({ message: 'Verification email sent. Check your inbox.' });
   }),
 
-  changePassword: asyncHandler(async (req, res) => {
+  verifyProfileUpdate: asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    const admin = await Admin.findOne({ 'pendingUpdates.token': token });
+    if (!admin) return res.status(400).json({ message: 'Invalid or expired link' });
+
+    if (admin.pendingUpdates.expiresAt < new Date()) {
+      admin.pendingUpdates = undefined;
+      await admin.save();
+      return res.status(400).json({ message: 'Token expired' });
+    }
+
+    const { Phone, Email } = admin.pendingUpdates;
+
+    if (Phone) admin.Phone = Phone;
+    if (Email) admin.Email = Email;
+
+    admin.pendingUpdates = undefined;
+    await admin.save();
+
+    res.status(200).json({ message: 'Admin profile updated successfully' });
+  }),
+
+  requestPasswordChange: asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Both current and new passwords are required' });
-    };
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ message: 'Both passwords required' });
 
-    const user = await Admin.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const admin = await Admin.findById(req.user._id);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
 
-    const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
-    if (!isMatch) return res.status(401).json({ message: 'Current password incorrect' });
+    const isMatch = await bcrypt.compare(currentPassword, admin.PasswordHash);
+    if (!isMatch) return res.status(401).json({ message: 'Incorrect current password' });
 
-    if (!regex.password.test(newPassword)) {
-      return res.status(400).json({
-        message: 'New password must be at least 10 characters long and include at least one letter and one number',
-      });
-    };
-
-    const isSame = await bcrypt.compare(newPassword, user.PasswordHash);
+    const isSame = await bcrypt.compare(newPassword, admin.PasswordHash);
     if (isSame) return res.status(400).json({ message: 'New password must differ from old' });
 
-    user.PasswordHash = await bcrypt.hash(newPassword, 10);
-    await user.save();
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-    res.status(200).json({ message: 'Password changed successfully' });
+    admin.pendingPasswordChange = { newPasswordHash: hashed, token, expiresAt };
+    await admin.save();
+
+    const verifyLink = `${process.env.FRONTEND_URL}/admin/verify-password-change/${token}`;
+
+    await sendEmail({
+      to: admin.Email,
+      subject: 'Verify Password Change',
+      html: `<p>Click <a href="${verifyLink}">here</a> to confirm password change.</p>`
+    });
+
+    res.status(200).json({ message: 'Verify link sent to email' });
+  }),
+
+  verifyPasswordChange: asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    const admin = await Admin.findOne({ 'pendingPasswordChange.token': token });
+    if (!admin) return res.status(400).json({ message: 'Invalid or expired link' });
+
+    if (admin.pendingPasswordChange.expiresAt < new Date()) {
+      admin.pendingPasswordChange = undefined;
+      await admin.save();
+      return res.status(400).json({ message: 'Token expired' });
+    }
+
+    admin.PasswordHash = admin.pendingPasswordChange.newPasswordHash;
+    admin.pendingPasswordChange = undefined;
+    await admin.save();
+
+    res.status(200).json({ message: 'Password updated. Please log in again.' });
   }),
 
   // APPROVAL/MG COUNCPSYCH
   getPendingApprovals: asyncHandler(async (req, res) => {
-    const pending = await CounselorPsychologist.find({ ApprovedByAdmin: false });
+    const pending = await CounselorPsychologist.find({
+      ApprovedByAdmin: false,
+      isDeleted: { $ne: true }
+    });
     res.status(200).json(pending);
   }),
 
   approveCounselorPsychologist: asyncHandler(async (req, res) => {
-    const user = await CounselorPsychologist.findByIdAndUpdate(req.params.id, { ApprovedByAdmin: true, Status: 'active' }, { new: true });
+    const user = await CounselorPsychologist.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: { $ne: true } },
+      { ApprovedByAdmin: true, Status: 'active' },
+      { new: true }
+    );
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json({ message: 'Counselor/Psychologist approved', user });
   }),
 
   rejectCounselorPsychologist: asyncHandler(async (req, res) => {
-    const user = await CounselorPsychologist.findByIdAndUpdate(req.params.id, { Status: 'rejected' }, { new: true });
+    const user = await CounselorPsychologist.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: { $ne: true } },
+      { Status: 'rejected' },
+      { new: true }
+    );
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json({ message: 'Counselor/Psychologist rejected' });
   }),
 
   deleteCounselorPsychologistAccount: asyncHandler(async (req, res) => {
-    const deleted = await CounselorPsychologist.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'User not found' });
+
+    const target = await CounselorPsychologist.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    if (target.isDeleted)
+      return res.status(400).json({ message: 'User already deleted' });
+
+    // Soft delete
+    target.isDeleted = true;
+    await target.save();
 
     res.status(200).json({ message: 'Account deleted' });
   }),
@@ -341,7 +290,7 @@ const AdminController = {
 
   // ADMIN/MODERATOR MGMT
   getAllAdmins: asyncHandler(async (req, res) => {
-    const admins = await Admin.find();
+    const admins = await Admin.find({ isDeleted: { $ne: true } }).select('-PasswordHash -tempPasswordHash');
     res.status(200).json(admins);
   }),
 
@@ -352,7 +301,7 @@ const AdminController = {
       return res.status(400).json({ message: 'All fields (AliasId, Role, Email, Phone) are required' });
 
     if (!regex.aliasId.test(AliasId))
-      return res.status(400).json({ message: 'Invalid Alias ID format' });
+      return res.status(400).json({ message: 'Invalid Username format' });
 
     if (!regex.email.test(email))
       return res.status(400).json({ message: 'Invalid email format' });
@@ -365,7 +314,7 @@ const AdminController = {
 
     const exists = await Admin.findOne({ AliasId });
     if (exists)
-      return res.status(409).json({ message: 'Alias ID already exists' });
+      return res.status(409).json({ message: 'Username already exists' });
 
     const tempPassword = Math.random().toString(36).slice(-6);
     const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
@@ -381,20 +330,24 @@ const AdminController = {
       tempPasswordExpires: Date.now() + 5 * 60 * 1000,
     });
 
-    await sendEmail({
-      to: email,
-      subject: 'MindMate Admin Credentials',
-      html: `
-            <p>Hello <strong>${AliasId}</strong>,</p>
-            <p>You have been added as an <strong>${role}</strong> to the MindMate platform.</p>
-            <p><strong>Alias ID:</strong> ${AliasId}</p>
-            <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-            <p>This password will expire in 5 minutes and must be changed on first login.</p>
-            <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:5173'}/admin/login">MindMate Admin Portal</a></p>
-            <br/>
-            <p>Regards,<br>MindMate Team</p>
-        `
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'MindMate Admin Credentials',
+        html: `
+             <p>Hello <strong>${AliasId}</strong>,</p>
+             <p>You have been added as an <strong>${role}</strong> to the MindMate platform.</p>
+             <p><strong>Username:</strong> ${AliasId}</p>
+             <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+             <p>This password will expire in 5 minutes and must be changed on first login.</p>
+             <p>Please login here: <a href="${process.env.ADMIN_PORTAL_URL || 'http://localhost:5173'}/admin/login">MindMate Admin Portal</a></p>
+             <br/>
+             <p>Regards,<br>MindMate Team</p>
+         `
+      });
+    } catch (err) {
+      console.warn('Email not sent:', err.message);
+    }
 
     res.status(201).json({ message: 'Admin/Moderator created and credentials sent to registered email', admin: newAdmin });
   }),
@@ -406,13 +359,21 @@ const AdminController = {
     const newTempPassword = Math.random().toString(36).slice(-6);
     const hashedTempPassword = await bcrypt.hash(newTempPassword, 10);
 
+    const firstAdmin = await Admin.find().sort({ createdAt: 1 }).limit(1);
+    if (firstAdmin[0]?._id.toString() === admin._id.toString()) {
+      return res.status(403).json({ message: 'Primary admin is protected.' });
+    }
+
+    if (admin._id.toString() === firstAdminIdFromDb.toString()) {
+      return res.status(403).json({ message: 'Temporary password cannot be reset for the primary admin.' });
+    }
+
     // Update admin with new temp password and expiry
     admin.tempPasswordHash = hashedTempPassword;
     admin.isTempPassword = true;
     admin.tempPasswordExpires = Date.now() + 5 * 60 * 1000;
     await admin.save();
 
-    sendSMS(admin.Phone, `Your new temporary password is: ${newTempPassword}. It expires in 5 minutes.`);
     if (admin.Email) {
       await sendEmail({
         to: admin.Email,
@@ -431,6 +392,38 @@ const AdminController = {
     res.status(200).json({ message: 'New temporary password generated and sent to email and phone.' });
   }),
 
+  updateAdmin: asyncHandler(async (req, res) => {
+    const { fullName, email, phone, role } = req.body;
+
+    const admin = await Admin.findById(req.params.adminId);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    const firstAdmin = await Admin.findOne().sort({ createdAt: 1 }).lean();
+
+    // Block if someone ELSE tries to update the super admin
+    if (
+      admin._id.toString() === firstAdmin._id.toString() &&
+      req.user._id.toString() !== firstAdmin._id.toString()
+    ) {
+      return res.status(403).json({ message: 'Super Admin cannot be modified by others' });
+    }
+
+    // Block role change for super admin (even by themselves)
+    if (admin._id.toString() === firstAdmin._id.toString() && role && role !== admin.Role) {
+      return res.status(403).json({ message: 'Super Admin role cannot be changed' });
+    }
+
+    admin.FullName = fullName;
+    admin.Email = email;
+    admin.Phone = phone;
+    if (role !== undefined) {
+      admin.Role = role;
+    }
+    await admin.save();
+
+    res.status(200).json({ message: 'Admin updated', admin });
+  }),
+
   deleteAdmin: asyncHandler(async (req, res) => {
     const requestingAdminId = req.user._id;
     const targetAdminId = req.params.adminId;
@@ -446,25 +439,33 @@ const AdminController = {
     if (requestingAdminId === targetAdminId)
       return res.status(403).json({ message: 'You cannot delete your own account' });
 
-    const deleted = await Admin.findByIdAndDelete(targetAdminId);
-    if (!deleted) return res.status(404).json({ message: 'Admin not found' });
+    const target = await Admin.findById(targetAdminId);
+    if (!target) return res.status(404).json({ message: 'Admin not found' });
+
+    if (target.isDeleted)
+      return res.status(400).json({ message: 'Admin already deleted' });
+
+    // Soft delete
+    target.isDeleted = true;
+    await target.save();
 
     res.status(200).json({ message: 'Admin deleted' });
   }),
 
   // STAT
   getDashboardStats: asyncHandler(async (req, res) => {
-    const totalAdmins = await Admin.countDocuments();
-    const totalCouncPsych = await CounselorPsychologist.countDocuments();
+    const totalAdmins = await Admin.countDocuments({ isDeleted: { $ne: true } });
+    const totalCouncPsych = await CounselorPsychologist.countDocuments({ isDeleted: { $ne: true } });
     const totalStudents = await Student.countDocuments();
     const totalReports = await Report.countDocuments();
     const totalVents = await Vent.countDocuments();
+    const totalAppointments = await Appointment.countDocuments();
 
-    res.status(200).json({ totalAdmins, totalCouncPsych, totalStudents, totalReports, totalVents });
+    res.status(200).json({ totalAdmins, totalCouncPsych, totalStudents, totalReports, totalVents, totalAppointments });
   }),
 
   getAllCounselorPsychologists: asyncHandler(async (req, res) => {
-    const users = await CounselorPsychologist.find()
+    const users = await CounselorPsychologist.find({ isDeleted: { $ne: true } })
       .select('-PasswordHash -tempPasswordHash')
       .sort({ createdAt: -1 });
     res.status(200).json(users);
@@ -486,19 +487,57 @@ const AdminController = {
     res.status(200).json(vents);
   }),
 
-  getAllSOS: asyncHandler(async (req, res) => {
-    const sos = await SOS.find()
+  getAllAppointments: asyncHandler(async (req, res) => {
+    const appointments = await Appointment.find()
       .populate({
         path: 'StudentId',
         select: 'AliasId FullName'
       })
       .populate({
-        path: 'AlertedTo',
-        select: 'FullName'
+        path: 'CounselorPsychologistId',
+        select: 'FullName Role Specialization'
       })
-      .sort({ TriggeredAt: -1 });
+      .sort({ SlotDate: -1, SlotStartTime: 1 });
 
-    res.status(200).json(sos);
+    res.status(200).json(appointments);
+  }),
+
+  updateStudentStatus: asyncHandler(async (req, res) => {
+    const { studentId } = req.params;
+    const { status } = req.body;
+
+    if (!['active', 'inactive', 'blocked'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const student = await Student.findByIdAndUpdate(
+      studentId,
+      { Status: status },
+      { new: true }
+    );
+
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    res.status(200).json({ message: `Student status updated to ${status}`, student });
+  }),
+
+  updateCounselorPsychologistStatus: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['active', 'inactive', 'blocked'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const counselor = await CounselorPsychologist.findByIdAndUpdate(
+      id,
+      { Status: status },
+      { new: true }
+    );
+
+    if (!counselor) return res.status(404).json({ message: 'Counselor/Psychologist not found' });
+
+    res.status(200).json({ message: `Counselor/Psychologist status updated to ${status}`, counselor });
   }),
 
 };

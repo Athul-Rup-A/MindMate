@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AdminNavbar from '../components/AdminNavbar';
 import AdminFooter from '../components/AdminFooter';
+import AdminSidebar from '../components/AdminSidebar';
 
 const AdminLayout = () => {
     const location = useLocation();
@@ -33,8 +34,15 @@ const AdminLayout = () => {
             }}
         >
             <AdminNavbar />
-            <div style={{ flex: '1', paddingTop: '45px', paddingBottom: '40px' }}>
-                <Outlet />
+
+            <div style={{ display: 'flex', flex: 1, paddingBottom: '45px' }}>
+                <div style={{ width: '65px', flexShrink: 0 }}>
+                    <AdminSidebar />
+                </div>
+
+                <div style={{ flex: '1', paddingTop: '45px', paddingBottom: '40px' }}>
+                    <Outlet />
+                </div>
             </div>
 
             <AdminFooter />

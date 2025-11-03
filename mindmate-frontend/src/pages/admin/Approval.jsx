@@ -59,7 +59,7 @@ const Approval = () => {
         await axios.put(`admin/reject/${selectedUser._id}`);
         toast.info(`${selectedUser.FullName} rejected`);
       }
-      fetchPendingApprovals();
+      await Promise.all([fetchPendingApprovals(), fetchCounselorPsychologists()]);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Action failed');
     } finally {
@@ -83,8 +83,7 @@ const Approval = () => {
       await axios.delete(`/admin/counselorpsychologist/${deleteTarget._id}`);
       toast.success(`${deleteTarget.FullName} deleted`);
       setShowDeleteModal(false);
-      const res = await axios.get('admin/counselorPsychologist');
-      setCounPsycho(res.data);
+      await Promise.all([fetchPendingApprovals(), fetchCounselorPsychologists()]);
     } catch (err) {
       toast.error('Failed to delete');
     }

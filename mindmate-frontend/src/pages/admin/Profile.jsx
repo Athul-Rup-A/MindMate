@@ -48,10 +48,10 @@ const Profile = () => {
         }
 
         try {
-            const res = await axios.put('admin/profile', values);
-            toast.success('Profile updated successfully');
-            setProfile(res.data);
-            resetForm({ values: res.data });
+            const res = await axios.post('admin/request-profile-update', values);
+            toast.success('Verification email sent. Please check your inbox to confirm changes.');
+            // setProfile(res.data);
+            // resetForm({ values: res.data });
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update profile');
         } finally {
@@ -61,8 +61,8 @@ const Profile = () => {
 
     const handlePasswordChange = async (values, { resetForm, setSubmitting }) => {
         try {
-            await axios.put('admin/change-profile-password', values);
-            toast.success('Password changed successfully');
+            await axios.post('admin/request-password-change', values);
+            toast.success('Verification email sent. Please check your inbox to confirm password change.');
             resetForm();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Password change failed');

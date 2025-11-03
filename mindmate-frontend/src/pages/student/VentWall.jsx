@@ -16,7 +16,10 @@ const VentWall = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [ventToDelete, setVentToDelete] = useState(null);
   const [isMyVentDelete, setIsMyVentDelete] = useState(false);
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [ventToEdit, setVentToEdit] = useState(null);
 
   const currentUserId = getCurrentUserId();
 
@@ -172,19 +175,6 @@ const VentWall = () => {
                     >
                       {vent.Reports?.some(id => id === currentUserId) ? '🚩' : '🏳️'} {vent.Reports?.length || 0}
                     </Button>
-                    {(vent.StudentId?._id || vent.StudentId)?.toString() === currentUserId && (
-                      <Button
-                        size="sm"
-                        variant="outline-dark"
-                        onClick={() => {
-                          setVentToDelete(vent._id);
-                          setIsMyVentDelete(false);
-                          setShowConfirm(true);
-                        }}
-                      >
-                        ❌
-                      </Button>
-                    )}
                   </div>
                 </div>
               </Card.Body>
@@ -231,12 +221,21 @@ const VentWall = () => {
                   <div className="mt-2 text-end">
                     <Button
                       size="sm"
+                      variant="outline-dark"
+                      className='me-2'
+                      onClick={() => {
+                        setVentToEdit(vent);
+                        setShowEditModal(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline-danger"
                       onClick={() => {
-                        // handleDelete(vent._id);
-                        // setMyVents(myVents.filter(v => v._id !== vent._id));
                         setVentToDelete(vent._id);
-                        setIsMyVentDelete(true); // Set context
+                        setIsMyVentDelete(true);
                         setShowConfirm(true);
                       }}
                     >
@@ -249,6 +248,63 @@ const VentWall = () => {
           )}
         </Modal.Body>
       </Modal>
+
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Vent</Modal.Title>
+        </Modal.Header>
+
+        <Formik
+          initialValues={{
+            Topic: ventToEdit?.Topic || '',
+            Content: ventToEdit?.Content || '',
+          }}
+          enableReinitialize
+          validationSchema={validationSchema}
+          onSubmit={async (values) => {
+            try {
+              await axios.put(
+                `${BASE_URL}/vents/${ventToEdit._id}`,
+                values,
+                authHeader()
+              );
+              toast.success("Vent updated successfully!");
+              fetchAllVents();
+              setShowEditModal(false);
+            } catch (err) {
+              toast.error(err.response?.data?.message || "Update failed");
+            }
+          }}
+        >
+          {({ handleSubmit, isSubmitting, dirty }) => (
+            <FormikForm onSubmit={handleSubmit}>
+              <Modal.Body>
+                <Form.Group className="mb-3">
+                  <Form.Label>Topic</Form.Label>
+                  <Field name="Topic" className="form-control" />
+                  <div className="text-danger small"><ErrorMessage name="Topic" /></div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Content</Form.Label>
+                  <Field as="textarea" name="Content" className="form-control" rows={3} />
+                  <div className="text-danger small"><ErrorMessage name="Content" /></div>
+                </Form.Group>
+              </Modal.Body>
+
+              <Modal.Footer>
+                <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting || !dirty}>
+                  Update Vent
+                </Button>
+              </Modal.Footer>
+            </FormikForm>
+          )}
+        </Formik>
+      </Modal>
+
     </>
   );
 };

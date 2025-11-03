@@ -11,7 +11,7 @@ const isValidURL = (url) => {
 };
 
 const allowedTypes = ['video', 'article', 'podcast', 'guide'];
-const allowedLanguages = ['English', 'Hindi', 'Tamil', 'Malayalam'];
+const allowedLanguages = ['English', 'Malayalam'];
 const allowedTags = ['anxiety', 'study', 'sleep'];
 
 const resourceController = {

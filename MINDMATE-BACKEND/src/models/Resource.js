@@ -12,13 +12,13 @@ const ResourceSchema = new Schema({
   language: {
     type: String,
     required: true,
-    enum: ['English', 'Hindi', 'Tamil', 'Malayalam'],
+    enum: ['English', 'Malayalam'],
   },
   CreatedBy: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'CounselorPsychologist',
-  required: true
-}, 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CounselorPsychologist',
+    required: true
+  },
   link: { type: String, required: true },
   tags: [{
     type: String,

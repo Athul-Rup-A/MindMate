@@ -12,9 +12,11 @@ connectDB().then(() => {
 
   // Socket.IO setup
   const io = new Server(server, {
+    // path: "/socket.io/",
     cors: {
-      origin: '*' || 'http://localhost:5173/',
+      origin: "http://localhost:5173",
       methods: ['GET', 'POST'],
+      // credentials: true,
     },
   });
 
@@ -28,6 +30,7 @@ connectDB().then(() => {
     });
 
     socket.on('callUser', ({ from, to, signalData }) => {
+      console.log("➡️ callUser triggered to:", to);
       io.to(to).emit('incomingCall', { from, signalData });
     });
 
@@ -45,21 +48,68 @@ connectDB().then(() => {
     });
 
     socket.on('sendMessage', async ({ to, from, text, fromName }) => {
-      const message = {
-        sender: from,
-        text,
-        fromName: fromName || 'User',
-        timestamp: new Date().toISOString(),
-      };
+      try {
+        const message = {
+          sender: from,
+          text,
+          fromName: fromName || 'User',
+          timestamp: new Date().toISOString(),
+        };
 
-      const saved = await ChatMessage.create({
-        from,
-        to,
-        text,
-        timestamp: message.timestamp,
-      });
+        const saved = await ChatMessage.create({
+          from,
+          to,
+          text,
+          timestamp: message.timestamp,
+        });
 
-      io.to(to).emit('receiveMessage', saved);
+        // Convert back to plain object with getters (decrypt)
+        const cleanMsg = saved.toObject({ getters: true });
+
+        // Emit to both users (so both see decrypted text)
+        io.to(to).emit('receiveMessage', cleanMsg);
+        io.to(from).emit('receiveMessage', cleanMsg);
+
+        console.log('💬 Message saved & emitted:', cleanMsg.text);
+      } catch (err) {
+        console.error('❌ Failed to send message:', err);
+      }
+    });
+
+    socket.on("messageSeen", async ({ messageId, userId }) => {
+      try {
+        const updated = await ChatMessage.findByIdAndUpdate(
+          messageId,
+          { $addToSet: { seenBy: userId } }, // add user if not already there
+          { new: true }
+        );
+
+        if (updated) {
+          io.to(updated.from).emit("messageSeenUpdate", {
+            messageId,
+            seenBy: updated.seenBy
+          });
+        }
+      } catch (err) {
+        console.error("❌ Failed to mark message seen:", err);
+      }
+    });
+
+    socket.on("editMessage", async (updatedMsg) => {
+      try {
+        await ChatMessage.findByIdAndUpdate(
+          updatedMsg._id,
+          { text: updatedMsg.text, edited: true },
+          { new: true }
+        );
+
+        const saved = await ChatMessage.findById(updatedMsg._id).lean({ getters: true });
+
+        io.to(updatedMsg.from).emit("messageEdited", saved);
+        io.to(updatedMsg.to).emit("messageEdited", saved);
+      } catch (err) {
+        console.error("❌ Failed to edit message:", err);
+      }
     });
 
     socket.on("deleteMessage", async ({ _id, from, to }) => {

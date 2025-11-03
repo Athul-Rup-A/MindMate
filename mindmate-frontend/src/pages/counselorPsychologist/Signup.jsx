@@ -8,11 +8,19 @@ import { InfoCircle, PersonFill, TelephoneFill, LockFill, EnvelopeFill, Clipboar
 import { Formik, Form as FormikForm, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
+const specializationOptions = [
+    "Clinical",
+    "Counseling",
+    "Child",
+    "Rehabilitation",
+    "Other",
+];
+
 const SignupSchema = Yup.object().shape({
     fullName: Yup.string().required('Full name is required'),
-    AliasId: Yup.string()
-        .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
-        .required('Alias ID is required'),
+    Username: Yup.string()
+        .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Username must be 4–20 characters, alphanumeric or underscore only')
+        .required('Username is required'),
     password: Yup.string()
         .required('Password is required')
         .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
@@ -24,6 +32,11 @@ const SignupSchema = Yup.object().shape({
         .required('Phone number is required'),
     credentials: Yup.string().required('Credentials are required'),
     specialization: Yup.string().required('Specialization is required'),
+    customSpecialization: Yup.string().when('specialization', {
+        is: "Other",
+        then: (schema) => schema.required("Please specify your specialization"),
+        otherwise: (schema) => schema.notRequired()
+    }),
     role: Yup.string().oneOf(['counselor', 'psychologist'], 'Invalid role').required('Role is required'),
 });
 
@@ -31,11 +44,21 @@ const Signup = () => {
     const navigate = useNavigate();
 
     const handleSubmit = async (values, { resetForm }) => {
+        const body = {
+            ...values,
+            specialization:
+                values.specialization === "Other"
+                    ? values.customSpecialization
+                    : values.specialization,
+        };
+
+        delete body.customSpecialization;
+
         try {
-            await axios.post('counselorPsychologist/signup', values);
+            await axios.post('counselorPsychologist/signup', body);
             toast.success('Signup successful! Await admin approval.');
             resetForm();
-            setTimeout(() => navigate('/counselorpsychologist/login'), 2500);
+            setTimeout(() => navigate('/login'), 2500);
         } catch (err) {
             const msg = err?.response?.data?.message || 'Something went wrong';
             toast.error(msg);
@@ -72,18 +95,19 @@ const Signup = () => {
                     <Formik
                         initialValues={{
                             fullName: '',
-                            AliasId: '',
+                            Username: '',
                             password: '',
                             email: '',
                             phone: '',
                             credentials: '',
                             specialization: '',
+                            customSpecialization: '',
                             role: '',
                         }}
                         validationSchema={SignupSchema}
                         onSubmit={handleSubmit}
                     >
-                        {({ isSubmitting }) => (
+                        {({ isSubmitting, values }) => (
                             <FormikForm>
                                 <Row>
                                     <Col md={6}>
@@ -96,7 +120,7 @@ const Signup = () => {
                                         <FormField
                                             label={
                                                 <>
-                                                    Alias ID{' '}
+                                                    Username{' '}
                                                     <OverlayTrigger
                                                         placement="right"
                                                         overlay={
@@ -109,7 +133,7 @@ const Signup = () => {
                                                     </OverlayTrigger>
                                                 </>
                                             }
-                                            name="AliasId"
+                                            name="Username"
                                             placeholder="Ex. PSY001"
                                             icon={<ClipboardFill />}
                                         />
@@ -120,12 +144,28 @@ const Signup = () => {
                                             placeholder="Enter email"
                                             icon={<EnvelopeFill />}
                                         />
-                                        <FormField
-                                            label="Phone"
-                                            name="phone"
-                                            placeholder="10-digit number"
-                                            icon={<TelephoneFill />}
-                                        />
+                                        <Form.Group className="mb-4">
+                                            <Form.Label>Specialization</Form.Label>
+                                            <Field
+                                                as="select"
+                                                name="specialization"
+                                                className="form-select"
+                                            >
+                                                <option value="">Select Specialization</option>
+                                                {specializationOptions.map((opt) => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </Field>
+                                            <ErrorMessage name="specialization" component="div" className="text-danger small" />
+                                        </Form.Group>
+
+                                        {values.specialization === "Other" && (
+                                            <FormField
+                                                name="customSpecialization"
+                                                label="Your Specialization"
+                                                placeholder="Enter specialization"
+                                            />
+                                        )}
                                     </Col>
 
                                     <Col md={6}>
@@ -157,10 +197,10 @@ const Signup = () => {
                                             icon={<InfoCircle />}
                                         />
                                         <FormField
-                                            label="Specialization"
-                                            name="specialization"
-                                            placeholder="Ex. Adolescent Therapy"
-                                            icon={<BriefcaseFill />}
+                                            label="Phone"
+                                            name="phone"
+                                            placeholder="10-digit number"
+                                            icon={<TelephoneFill />}
                                         />
                                         <Form.Group className="mb-4">
                                             <Form.Label>Role</Form.Label>
@@ -187,7 +227,7 @@ const Signup = () => {
                                     <Button
                                         variant="link"
                                         className="text-decoration-none text-dark"
-                                        onClick={() => navigate('/counselorpsychologist/login')}
+                                        onClick={() => navigate('/login')}
                                     >
                                         Already have an account?
                                     </Button>

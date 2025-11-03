@@ -8,6 +8,10 @@ import { LockFill, InfoCircle, EyeFill, EyeSlashFill } from 'react-bootstrap-ico
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const ADMIN_URL = import.meta.env.VITE_ADMIN_BASE_URL;
+const CP_URL = import.meta.env.VITE_CP_BASE_URL;
+const STUDENT_URL = import.meta.env.VITE_STUDENT_BASE_URL;
+
 const ForceResetPassword = () => {
 
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -19,10 +23,10 @@ const ForceResetPassword = () => {
   const role = location.state?.role || 'student';
   const BASE_URL =
     role === 'admin'
-      ? 'http://localhost:5000/api/admin'
+      ? ADMIN_URL
       : role === 'counselorPsychologist'
-        ? 'http://localhost:5000/api/counselorPsychologist'
-        : 'http://localhost:5000/api/students';
+        ? CP_URL
+        : STUDENT_URL;
 
   const minLengths = {
     student: 6,

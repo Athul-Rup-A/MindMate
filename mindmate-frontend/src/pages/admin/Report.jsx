@@ -69,8 +69,8 @@ const Report = () => {
                                         {report.TargetType} Report
                                     </Card.Title>
 
-                                    <p className="mb-1"><strong>Reporter:</strong> {report.ReporterId?.AliasId || 'Unknown'}</p>
-                                    <p className="mb-1"><strong>Target:</strong> {report.TargetId?.FullName || report.TargetAliasId || 'N/A'}</p>
+                                    <p className="mb-1"><strong>Reporter:</strong> {report.ReporterId?.Username || 'Unknown'}</p>
+                                    <p className="mb-1"><strong>Target:</strong> {report.TargetId?.FullName || report.TargetUsername || 'N/A'}</p>
                                     <p className="mb-1"><strong>Reason:</strong> {report.Reason}</p>
                                     <p className="mb-2"><strong>Status:</strong> {renderStatusBadge(report.Status)}</p>
 

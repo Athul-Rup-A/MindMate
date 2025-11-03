@@ -10,10 +10,6 @@ const studentAuth = [auth, permitRoles('student')];
 
 // Auth
 router.post('/signup', StudentController.signupStudent);
-router.post('/login', StudentController.loginStudent);
-router.post('/forgot-password', StudentController.forgotPasswordByPhone);
-router.post('/forgot-aliasid', StudentController.forgotAliasIdByPhone);
-router.put('/set-new-password', StudentController.setNewPassword);
 
 // CounselorPsychologist-Section
 router.get('/counselorPsychologist', studentAuth, StudentController.getAvailableCounselorPsychologist);
@@ -22,8 +18,10 @@ router.get('/my-counselors', studentAuth, StudentController.getMyAppointmentCoun
 
 // Profile
 router.get('/profile', studentAuth, StudentController.getProfile);
-router.put('/change-profile-password', studentAuth, StudentController.changePassword);
-router.put('/profile', studentAuth, StudentController.updateProfile);
+router.post('/request-profile-update', studentAuth, StudentController.updateProfileRequest);
+router.get('/verify-profile-update/:token', StudentController.verifyProfileUpdate);
+router.post('/request-password-change', studentAuth, StudentController.requestPasswordChange);
+router.get('/verify-password-change/:token', StudentController.verifyPasswordChange);
 
 // Appointments
 router.post('/appointments', studentAuth, StudentController.createAppointment);
@@ -43,25 +41,9 @@ router.delete('/vents/:id', studentAuth, StudentController.deleteVent);
 // Feedbacks
 router.post('/feedbacks', studentAuth, StudentController.createFeedback);
 router.get('/feedbacks', studentAuth, StudentController.getMyFeedbacks);
+router.get('/feedbacks/ratings', studentAuth, StudentController.getCounPsychRatings);
 router.put('/feedbacks/:id', studentAuth, StudentController.updateFeedback);
 router.delete('/feedbacks/:id', studentAuth, StudentController.deleteFeedback);
-
-// SOS
-router.post('/sos', studentAuth, StudentController.triggerSOS);
-router.get('/resources/counselorPsychologist', studentAuth, StudentController.getAllApprovedCounselorPsychologist);
-router.get('/sos', studentAuth, StudentController.getMySOSLogs);
-router.delete('/sos/:id', studentAuth, StudentController.deleteSOSLog);
-
-// Wellness (Mood & Habits)
-router.post('/mood', studentAuth, StudentController.addMoodEntry);
-router.get('/mood', studentAuth, StudentController.getMoodEntries);
-router.put('/mood/:index', studentAuth, StudentController.updateMoodEntry);
-router.delete('/mood/:index', studentAuth, StudentController.deleteMoodEntry);
-
-router.post('/habits', studentAuth, StudentController.addHabitLog);
-router.get('/habits', studentAuth, StudentController.getHabitLogs);
-router.put('/habits/:index', studentAuth, StudentController.updateHabitLog);
-router.delete('/habits/:index', studentAuth, StudentController.deleteHabitLog);
 
 // Resources (View only)
 router.get('/resources', studentAuth, StudentController.getResources);

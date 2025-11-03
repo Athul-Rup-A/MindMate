@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
 
 const CounselorPsychologistSchema = new Schema({
-  AliasId: { type: String, required: true, unique: true },
+  ProfileImage: {
+    type: String,
+    default: null,
+  },
+  Username: { type: String, required: true, unique: true },
   PasswordHash: { type: String, required: true },
   isTempPassword: {
     type: Boolean,
@@ -26,9 +30,10 @@ const CounselorPsychologistSchema = new Schema({
   FullName: { type: String },
   Credentials: { type: String, required: true },
   Specialization: { type: String, required: true },
+  SpecializationStatus: { type: String, enum: ['approved', 'pending'], default: 'approved' },
   Status: {
     type: String,
-    enum: ['active', 'pending', 'suspended'],
+    enum: ['pending', 'active', 'inactive', 'blocked'],
     default: 'pending',
   },
   Email: { type: String, unique: true },
@@ -38,6 +43,22 @@ const CounselorPsychologistSchema = new Schema({
     enum: ['counselor', 'psychologist'],
     required: true,
   },
+  pendingUpdates: {
+    Phone: { type: String },
+    Email: { type: String },
+    FullName: { type: String },
+    Credentials: { type: String },
+    Specialization: { type: String },
+    PasswordHash: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date },
+  },
+  pendingPasswordChange: {
+    newPasswordHash: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date },
+  },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const CounselorPsychologist = model('CounselorPsychologist', CounselorPsychologistSchema);

@@ -18,12 +18,24 @@ const Admin = () => {
   const currentUserId = getCurrentUserId();
   const [firstAdminId, setFirstAdminId] = useState(null);
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [adminToEdit, setAdminToEdit] = useState(null);
+
   const fetchAdmins = async () => {
     try {
       const res = await axios.get('admin/users');
-      setAdminList(res.data);
-      const sorted = [...res.data].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setFirstAdminId(sorted[0]?._id); // Store the first admin's ID
+      const sortedByDate = [...res.data].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const firstAdminId = sortedByDate[0]?._id;
+      setFirstAdminId(firstAdminId);
+
+      // sort to show YOU at top
+      const sortedByLoggedInFirst = [...res.data].sort((a, b) => {
+        if (a._id === currentUserId) return -1;
+        if (b._id === currentUserId) return 1;
+        return 0;
+      });
+
+      setAdminList(sortedByLoggedInFirst);
     } catch (err) {
       if (err?.response?.status === 403) {
         setForbidden(true);
@@ -42,7 +54,7 @@ const Admin = () => {
   const handleResendTempPassword = async (admin) => {
     try {
       await axios.post(`admin/resend-temp-password/${admin._id}`);
-      toast.success(`Temp password resent to ${admin.AliasId}`);
+      toast.success(`Temp password resent to ${admin.Username}`);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to resend password');
     }
@@ -51,7 +63,7 @@ const Admin = () => {
   const handleDeleteAdmin = async () => {
     try {
       await axios.delete(`admin/${adminToDelete._id}`);
-      toast.success(`${adminToDelete.AliasId} deleted`);
+      toast.success(`${adminToDelete.Username} deleted`);
       fetchAdmins();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to delete admin');
@@ -63,7 +75,7 @@ const Admin = () => {
   const handleCreateAdmin = async (values, { resetForm }) => {
     try {
       await axios.post('admin/create', values);
-      toast.success(`${values.AliasId} created and credentials sent`);
+      toast.success(`${values.Username} created and credentials sent`);
       setShowCreateModal(false);
       fetchAdmins();
       resetForm();
@@ -116,7 +128,13 @@ const Admin = () => {
                 >
                   <Card.Body>
                     <Card.Title className="fw-bold text-primary">
-                      {admin.AliasId}
+                      {admin._id === firstAdminId ? (
+                        <>
+                          {admin.Username} <Badge bg="danger" className="ms-2">Super Admin</Badge>
+                        </>
+                      ) : (
+                        admin.Username
+                      )}
                       {admin._id === currentUserId && (
                         <Badge bg="info" className="ms-2">You</Badge>
                       )}
@@ -126,25 +144,41 @@ const Admin = () => {
                     <Card.Text className="mb-3"><strong>Phone:</strong> {admin.Phone}</Card.Text>
 
                     <div className="d-flex gap-2">
-                      {currentUserId === firstAdminId && admin._id !== currentUserId && (
+                      {/* {currentUserId === firstAdminId && admin._id !== currentUserId && ( */}
+                      {admin._id !== currentUserId && (
                         <>
                           <Button
                             variant="outline-warning"
                             size="sm"
+                            disabled={admin._id === firstAdminId}
+                            title={admin._id === firstAdminId ? "Primary admin protected" : "Resend temp password"}
                             onClick={() => handleResendTempPassword(admin)}
                           >
                             Resend Password
                           </Button>
                           <Button
-                            variant="outline-danger"
+                            variant="outline-info"
                             size="sm"
+                            disabled={admin._id === firstAdminId}
                             onClick={() => {
-                              setAdminToDelete(admin);
-                              setShowDeleteModal(true);
+                              setAdminToEdit(admin);
+                              setShowEditModal(true);
                             }}
                           >
-                            Delete
+                            Edit
                           </Button>
+                          {currentUserId === firstAdminId && admin._id !== currentUserId && (
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => {
+                                setAdminToDelete(admin);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>
@@ -166,7 +200,7 @@ const Admin = () => {
             <span className="fw-bold">
               {adminToDelete?.Role === 'moderator' ? 'Moderator' : 'Admin'}{' '}
               <span className='text-primary'>
-                {adminToDelete?.AliasId}
+                {adminToDelete?.Username}
               </span>
             </span>?
           </p>
@@ -180,16 +214,16 @@ const Admin = () => {
         <Modal.Body>
           <Formik
             initialValues={{
-              AliasId: '',
+              Username: '',
               fullName: '',
               email: '',
               phone: '',
               role: 'admin',
             }}
             validationSchema={Yup.object({
-              AliasId: Yup.string()
-                .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
-                .required('Alias ID is required'),
+              Username: Yup.string()
+                .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Username must be 4–20 characters, alphanumeric or underscore only')
+                .required('Username is required'),
               fullName: Yup.string().required('Full Name is required'),
               email: Yup.string().email('Invalid email').required('Email is required'),
               phone: Yup.string()
@@ -201,7 +235,7 @@ const Admin = () => {
           >
             {({ handleSubmit }) => (
               <Form onSubmit={handleSubmit} className="d-flex flex-column">
-                <FormField name="AliasId" label="Alias ID" placeholder="Enter Alias ID" />
+                <FormField name="Username" label="Username" placeholder="Enter Username" />
                 <FormField name="fullName" label="Full Name" placeholder="Enter Full Name" />
                 <FormField name="email" type="email" label="Email" placeholder="Enter Email" />
                 <FormField name="phone" label="Phone" placeholder="Enter 10-digit Phone" />
@@ -226,6 +260,86 @@ const Admin = () => {
               </Form>
             )}
           </Formik>
+        </Modal.Body>
+      </Modal>
+
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Admin</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          {adminToEdit && (
+            <Formik
+              initialValues={{
+                fullName: adminToEdit.FullName || '',
+                email: adminToEdit.Email || '',
+                phone: adminToEdit.Phone || '',
+                role: adminToEdit.Role || 'admin'
+              }}
+              validationSchema={Yup.object({
+                fullName: Yup.string().required('Required'),
+                email: Yup.string().email('Invalid email').required('Required'),
+                phone: Yup.string()
+                  .matches(/^[6-9]\d{9}$/, 'Enter valid phone')
+                  .required('Required'),
+                role: Yup.string().oneOf(['admin', 'moderator'], 'Invalid role')
+              })}
+              onSubmit={async (values) => {
+                try {
+                  const payload = { ...values };
+
+                  // If current user is NOT super admin → remove role field
+                  if (currentUserId !== firstAdminId) {
+                    delete payload.role;
+                  }
+
+                  await axios.put(`admin/${adminToEdit._id}`, payload);
+                  toast.success('Updated successfully');
+                  setShowEditModal(false);
+                  fetchAdmins();
+                } catch (err) {
+                  toast.error(err?.response?.data?.message || 'Update failed!');
+                }
+              }}
+            >
+              {({ handleSubmit }) => (
+                <Form onSubmit={handleSubmit}>
+                  <FormField name="fullName" label="Full Name" />
+                  <FormField name="email" label="Email" type="email" />
+                  <FormField name="phone" label="Phone" />
+
+                  {currentUserId === firstAdminId && (
+                    <Form.Group className="mt-2">
+                      <Form.Label>Role</Form.Label>
+                      <Field as="select" name="role" className="form-select">
+                        <option value="admin">Admin</option>
+                        <option value="moderator">Moderator</option>
+                      </Field>
+                      <ErrorMessage name="role" component="div" className="text-danger small mt-1" />
+                    </Form.Group>
+                  )}
+
+                  {adminToEdit._id === firstAdminId && (
+                    <p className="text-danger small mt-2">
+                      Super Admin role cannot be modified.
+                    </p>
+                  )}
+
+                  {adminToEdit._id === currentUserId && (
+                    <p className="text-warning small mt-2">
+                      You cannot change your own role.
+                    </p>
+                  )}
+
+                  <div className="d-flex justify-content-end gap-2 mt-3">
+                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
+                    <Button type="submit" variant="success">Save</Button>
+                  </div>
+                </Form>
+              )}
+            </Formik>
+          )}
         </Modal.Body>
       </Modal>
 

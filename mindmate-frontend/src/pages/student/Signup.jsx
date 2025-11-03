@@ -11,12 +11,12 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
   const SignupSchema = Yup.object().shape({
-    AliasId: Yup.string()
-      .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Alias ID must be 4–20 characters, alphanumeric or underscore only')
-      .required('Alias ID is required'),
+    Username: Yup.string()
+      .matches(/^[a-zA-Z0-9_]{4,20}$/, 'Username must be 4–20 characters, alphanumeric or underscore only')
+      .required('Username is required'),
     email: Yup.string()
       .email('Enter a valid email address')
       .required('Email is required'),
@@ -24,7 +24,7 @@ const Signup = () => {
       .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian phone number')
       .required('Phone is required'),
     password: Yup.string()
-      .matches(/^[A-Za-z0-9]{6,}$/, 'At least 6 characters, alphanumeric only')
+      .matches(/^[A-Za-z0-9]{8,}$/, 'At least 8 characters, alphanumeric only')
       .matches(/[A-Za-z]/, 'At least one letter required')
       .matches(/[0-9]/, 'At least one number required')
       .required('Password is required'),
@@ -32,9 +32,10 @@ const Signup = () => {
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
+
       await axios.post(`${BASE_URL}/signup`, values);
       toast.success('Signup successful! You can now log in.');
-      setTimeout(() => navigate('/student/login'), 3700);
+      setTimeout(() => navigate('/login'), 3700);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -71,17 +72,17 @@ const Signup = () => {
           </p>
 
           <Formik
-            initialValues={{ AliasId: '', email: '', password: '', phone: '' }}
+            initialValues={{ Username: '', email: '', password: '', phone: '' }}
             validationSchema={SignupSchema}
             onSubmit={handleSubmit}
           >
             {({ isSubmitting }) => (
               <FormikForm>
 
-                {/* Alias ID */}
+                {/* Username */}
                 <Form.Group className="mb-3">
                   <Form.Label>
-                    Alias ID{' '}
+                    Username{' '}
                     <OverlayTrigger
                       placement="right"
                       overlay={
@@ -97,10 +98,10 @@ const Signup = () => {
                     <InputGroup.Text>
                       <PersonFill />
                     </InputGroup.Text>
-                    <Field name="AliasId" as={Form.Control} placeholder="Enter Alias ID" />
+                    <Field name="Username" as={Form.Control} placeholder="Enter Username" />
                   </InputGroup>
                   <div className="text-danger small mt-1">
-                    <ErrorMessage name="AliasId" />
+                    <ErrorMessage name="Username" />
                   </div>
                 </Form.Group>
 
@@ -145,7 +146,7 @@ const Signup = () => {
                       placement="right"
                       overlay={
                         <Tooltip>
-                          At least 8 characters, 1 letter, 1 number.
+                          8 characters including atleast one letter and one number.
                         </Tooltip>
                       }
                     >
@@ -188,7 +189,7 @@ const Signup = () => {
                   <Button
                     variant="link"
                     className="text-decoration-none text-dark"
-                    onClick={() => navigate('/student/login')}
+                    onClick={() => navigate('/login')}
                   >
                     Already have an account?
                   </Button>

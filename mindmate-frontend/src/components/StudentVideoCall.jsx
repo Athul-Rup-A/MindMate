@@ -27,6 +27,7 @@ const StudentVideoCall = ({ studentId }) => {
         setStream(currentStream);
         if (myVideo.current) myVideo.current.srcObject = currentStream;
 
+        socket.emit('join', studentId);
         socket.emit('readyForCall', { studentId });
         console.log("✅ Student emitted readyForCall:", studentId);
 

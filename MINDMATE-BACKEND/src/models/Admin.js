@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
 
 const AdminSchema = new Schema({
-  AliasId: { type: String, required: true, unique: true },
+  Username: { type: String, required: true, unique: true },
   FullName: {
     type: String,
     required: true,
@@ -24,6 +24,18 @@ const AdminSchema = new Schema({
     unique: true,
   },
   Email: { type: String, unique: true },
+  pendingUpdates: {
+    Phone: { type: String },
+    Email: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date }
+  },
+  pendingPasswordChange: {
+    newPasswordHash: { type: String },
+    token: { type: String },
+    expiresAt: { type: Date }
+  },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const Admin = model('Admin', AdminSchema);

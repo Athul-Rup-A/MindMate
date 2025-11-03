@@ -4,38 +4,41 @@ import ProtectedRoute from '../components/Protectedroute';
 import StudentLayout from '../Layout/StudentLayout';
 import CounselorPsychologistLayout from '../Layout/CounselorPsychologistLayout';
 import AdminLayout from '../Layout/AdminLayout';
+import VerifyUpdateStudent from '../pages/student/VerifyUpdateStudent';
+import VerifyPasswordStudent from '../pages/student/VerifyPasswordStudent';
+import VerifyUpdateCounselorPsychologist from '../pages/counselorPsychologist/VerifyUpdateCounselorPsychologist';
+import VerifyPasswordCounselorPsychologist from '../pages/counselorPsychologist/VerifyPasswordCounselorPsychologist';
+import VerifyUpdateAdmin from '../pages/admin/VerifyUpdateAdmin';
+import VerifyPasswordAdmin from '../pages/admin/VerifyPasswordAdmin';
 
 // Welcome page
 import Welcome from '../components/Welcome';
 
+// Login for All
+import CentralizedLogin from '../pages/CentralizedLogin';
+
 // Student pages
 import StudentSignup from '../pages/student/Signup';
-import Login from '../pages/student/Login';
 import Profile from '../pages/student/Profile';
 import ForceResetPassword from '../components/ForceResetPassword';
 import Appointment from '../pages/student/Appointment';
 import StudentHome from '../pages/student/StudentHome';
 import VentWall from '../pages/student/VentWall';
 import Feedback from '../pages/student/Feedback';
-import SOS from '../pages/student/SOS';
-import Wellness from '../pages/student/Wellness';
 import Resource from '../pages/student/Resource';
 import Report from '../pages/student/Report';
 
 // CounselorPsychologist pages
 import CounselorPsychologistSignup from '../pages/counselorPsychologist/Signup';
-import CounselorPsychologistLogin from '../pages/counselorPsychologist/Login';
 import CounselorPsychologistProfile from '../pages/counselorPsychologist/Profile';
 import CounselorPsychologistAppointment from '../pages/counselorPsychologist/Appointment';
 import CounselorPsychologistAvailability from '../pages/counselorPsychologist/Availability';
 import CounselorPsychologistFeedback from '../pages/counselorPsychologist/Feedback';
-import CounselorPsychologistSOS from '../pages/counselorPsychologist/SOS';
 import CounselorPsychologistResource from '../pages/counselorPsychologist/Resource';
-import CounselorPsychologistWellness from '../pages/counselorPsychologist/Wellness';
+import CouncPsychoDash from '../components/CouncPsychDash';
 
 // Admin pages
 import AdminSignup from '../pages/admin/Signup'
-import AdminLogin from '../pages/admin/Login'
 import AdminStat from '../pages/admin/Stat'
 import AdminProfile from '../pages/admin/Profile'
 import AdminApproval from '../pages/admin/Approval'
@@ -52,21 +55,32 @@ const AppRoutes = () => (
     <Routes>
       {/* Entry Point */}
       <Route path="/" element={<Welcome />} />
+      <Route path="/login" element={<CentralizedLogin />} />
 
       {/* Shared Routes */}
       <Route path="/force-reset-password" element={<ForceResetPassword />} />
+      <Route path="/students/verify-profile-update/:token" element={<VerifyUpdateStudent />} />
+      <Route path="/students/verify-password-change/:token" element={<VerifyPasswordStudent />} />
+      <Route
+        path="/counselorpsychologist/verify-profile-update/:token"
+        element={<VerifyUpdateCounselorPsychologist />}
+      />
+      <Route
+        path="/counselorpsychologist/verify-password-change/:token"
+        element={<VerifyPasswordCounselorPsychologist />}
+      />
+      <Route path="/admin/verify-profile-update/:token" element={<VerifyUpdateAdmin />} />
+      <Route path="/admin/verify-password-change/:token" element={<VerifyPasswordAdmin />} />
 
       {/* Student Public Routes */}
       <Route path="/student/signup" element={<StudentSignup />} />
-      <Route path="/student/login" element={<Login />} />
 
       {/* Counselor&Psychologist Public Routes */}
       <Route path="/counselorpsychologist/signup" element={<CounselorPsychologistSignup />} />
-      <Route path="/counselorpsychologist/login" element={<CounselorPsychologistLogin />} />
 
       {/* Admin Public Routes */}
       <Route path="/admin/signup" element={<AdminSignup />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
+
 
       {/* Student Protected Routes */}
       <Route path="student" element={<StudentLayout />}>
@@ -89,12 +103,6 @@ const AppRoutes = () => (
         <Route path="feedback" element={
           <ProtectedRoute><Feedback /></ProtectedRoute>
         } />
-        <Route path="sos" element={
-          <ProtectedRoute><SOS /></ProtectedRoute>
-        } />
-        <Route path="wellness" element={
-          <ProtectedRoute><Wellness /></ProtectedRoute>
-        } />
         <Route path="resource" element={
           <ProtectedRoute><Resource /></ProtectedRoute>
         } />
@@ -105,6 +113,9 @@ const AppRoutes = () => (
 
       {/* Counselor&Psychologist Protected Routes */}
       <Route path="counselorpsychologist" element={<CounselorPsychologistLayout />}>
+        <Route path="stats" element={
+          <ProtectedRoute><CouncPsychoDash /></ProtectedRoute>}
+        />
 
         <Route path="profile" element={
           <ProtectedRoute><CounselorPsychologistProfile /></ProtectedRoute>
@@ -122,16 +133,8 @@ const AppRoutes = () => (
           <ProtectedRoute><CounselorPsychologistFeedback /></ProtectedRoute>
         } />
 
-        <Route path="sos" element={
-          <ProtectedRoute><CounselorPsychologistSOS /></ProtectedRoute>
-        } />
-
         <Route path="resource" element={
           <ProtectedRoute><CounselorPsychologistResource /></ProtectedRoute>
-        } />
-
-        <Route path="wellness" element={
-          <ProtectedRoute><CounselorPsychologistWellness /></ProtectedRoute>
         } />
       </Route>
 

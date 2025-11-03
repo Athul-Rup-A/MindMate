@@ -16,10 +16,8 @@ const StudentNavbar = ({ counselorId }) => {
   const [chatCounselors, setChatCounselors] = useState([]);
   const [selectedCounselorId, setSelectedCounselorId] = useState('');
 
-  const [dispAlias, setDispAlias] = useState('');
+  const [dispUsername, setDispUsername] = useState('');
   const navigate = useNavigate();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
   const [studentId, setStudentId] = useState('');
   const studentIdRef = useRef(null);
 
@@ -28,17 +26,22 @@ const StudentNavbar = ({ counselorId }) => {
   const location = useLocation();
   const isResourcePage = location.pathname === '/student/resource';
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
   useEffect(() => {
 
-    const fetchAlias = async () => {
+    socket.connect();
+
+    // temporary join placeholder until username loads
+    socket.emit("join", "student-temp");
+
+    const fetchUsername = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/profile`, authHeader());
-        const alias = res.data?.AliasId || '';
-        const first = alias.split(' ')[0];
+        const username = res.data?.Username || '';
+        const first = username.split(' ')[0];
         const capFirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
-        setDispAlias(capFirst(first));
+        setDispUsername(capFirst(first));
 
         const id = res.data._id;
         setStudentId(id);
@@ -55,7 +58,7 @@ const StudentNavbar = ({ counselorId }) => {
         if (counselorId) {
           try {
             const counselorRes = await axios.get(
-              `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/counselors'}/${counselorId}`,
+              `${import.meta.env.VITE_API_URL / counselorPsychologist}/${counselorId}`,
               authHeader()
             );
             setCounselorName(counselorRes.data.FullName || 'Counselor');
@@ -86,9 +89,10 @@ const StudentNavbar = ({ counselorId }) => {
             localStorage.setItem('unreadMessages', JSON.stringify(updated));
             setUnreadMessages(updated); // Don't count if already chatting
           }
+          fetchUsername();
         });
       } catch (err) {
-        console.error('Failed to fetch student alias');
+        console.error('Failed to fetch student username');
       }
     }
 
@@ -103,11 +107,11 @@ const StudentNavbar = ({ counselorId }) => {
       }
     };
 
-    fetchAlias();
+    fetchUsername();
     fetchMyCounselors();
 
     // Set up listener exactly once, outside async
-    const handleIncomingCall = ({ from }) => {
+    const handleIncomingCall = ({ from, signalData }) => {
       console.log("📞 Incoming call from counselor:", from);
       const accept = window.confirm('📞 Incoming call from your counselor. Do you want to accept?');
       const id = studentIdRef.current;
@@ -133,42 +137,27 @@ const StudentNavbar = ({ counselorId }) => {
       style={{
         backgroundColor: 'transparent',
         top: 0,
+        left: '60px',
+        right: 0,
+        height: '70px',
+        display: 'flex',
+        marginLeft: '60px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         zIndex: 1000,
         borderBottom: '1px solid rgba(255,255,255,0.2)',
       }}>
       <h4 className="m-0">
-        {dispAlias ? (
+        {dispUsername ? (
           <>
-            {dispAlias}'s • <span className='text-light'>MindMate</span>
+            {dispUsername}'s • <span className='text-primary'>MindMate</span>
           </>
         ) : (
           "Your's • MindMate"
         )}
       </h4>
 
-      <div className="d-md-none">
-        <Button variant="outline-dark" size="sm"
-          style={{
-            padding: '4px 10px'
-          }}
-          onClick={() => setShowMenu(true)}>
-        </Button>
-      </div>
-
-      <div className="d-none d-md-flex gap-5 ms-auto">
-        <Button variant='link' size="sm"
-          className={`text-decoration-none ${isResourcePage ? 'text-light' : 'text-dark'}`}
-          style={location.pathname === '/student/home' ? { borderBottom: '2px solid black' } : {}}
-          onClick={() => navigate('/student/home')}>Home</Button>
-        <Button variant="link" size="sm"
-          className={`text-decoration-none ${isResourcePage ? 'text-light' : 'text-dark'}`}
-          style={location.pathname === '/student/profile' ? { borderBottom: '2px solid black' } : {}}
-          onClick={() => navigate('/student/profile')}>Profile</Button>
-        <Button variant="link" size="sm"
-          className={`text-decoration-none ${isResourcePage ? 'text-light' : 'text-dark'}`}
-          style={location.pathname === '/student/appointments' ? { borderBottom: '2px solid black' } : {}}
-          onClick={() => navigate('/student/appointments')}>Appointments</Button>
-
+      <div className='d-flex gap-5'>
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <Form.Select
             size="sm"
@@ -188,12 +177,14 @@ const StudentNavbar = ({ counselorId }) => {
             }}
           >
             <option value="">💬Chat</option>
-            {chatCounselors.map(c => (
-              <option key={c._id} value={c._id}>
-                {c.FullName} ({c.Role})
-                {(unreadMessages?.[c._id] ?? 0) > 0 ? ` (${unreadMessages[c._id]})` : ''}
-              </option>
-            ))}
+            {[...chatCounselors]
+              .sort((a, b) => (unreadMessages[b._id] || 0) - (unreadMessages[a._id] || 0))
+              .map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.FullName} ({c.Role})
+                  {(unreadMessages?.[c._id] ?? 0) > 0 ? ` (${unreadMessages[c._id]})` : ''}
+                </option>
+              ))}
           </Form.Select>
 
           {/* Red Dot Notification on Dropdown */}
@@ -211,92 +202,7 @@ const StudentNavbar = ({ counselorId }) => {
           )}
         </div>
 
-        <Button variant={isResourcePage ? 'light' : 'dark'} size="sm" onClick={() => setShowMenu(true)}>Menu</Button>
       </div>
-
-      <Offcanvas show={showMenu} onHide={() => setShowMenu(false)} placement="end">
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title className="fs-4">
-            {dispAlias ? `${dispAlias}'s • Space` : 'Navigation'}
-          </Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex flex-column gap-2">
-          <Button className="d-md-none"
-            variant={location.pathname === '/student/home' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/home');
-              setShowMenu(false);
-            }}>Home</Button>
-          <Button className="d-md-none"
-            variant={location.pathname === '/student/profile' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/profile');
-              setShowMenu(false);
-            }}>Profile</Button>
-          <Button className="d-md-none"
-            variant={location.pathname === '/student/appointments' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/appointments');
-              setShowMenu(false);
-            }}>Appointments</Button>
-
-          <Button variant={location.pathname === '/student/ventwall' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/ventwall');
-              setShowMenu(false);
-            }}>VentWall</Button>
-          <Button variant={location.pathname === '/student/wellness' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/wellness');
-              setShowMenu(false);
-            }}>Wellness</Button>
-          <Button variant={location.pathname === '/student/resource' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/resource');
-              setShowMenu(false);
-            }}>Resource</Button>
-          <Button variant={location.pathname === '/student/feedback' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/feedback');
-              setShowMenu(false);
-            }}>Feedback</Button>
-          <Button variant={location.pathname === '/student/report' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/report');
-              setShowMenu(false);
-            }}>Reporting</Button>
-          <Button variant={location.pathname === '/student/sos' ? 'light' : 'outline-dark'}
-            onClick={() => {
-              navigate('/student/sos');
-              setShowMenu(false);
-            }}>SOS</Button>
-          <Button variant="danger" onClick={() => setShowLogoutModal(true)}>Logout</Button>
-        </Offcanvas.Body>
-
-        <div className="mt-auto text-center small pt-2 pb-2 border-top">
-          Feel ✦ Express ✦ Heal
-        </div>
-
-      </Offcanvas>
-
-      <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>
-        <Modal.Header className="justify-content-center border-0">
-          <Modal.Title className="text-center w-100">Are you sure you want to log out?</Modal.Title>
-        </Modal.Header>
-        <Modal.Footer className="d-flex flex-column gap-2">
-          <Button className="w-50" variant="danger" onClick={() => {
-            localStorage.removeItem('token');
-            navigate('/', { replace: true });
-            window.history.pushState(null, '', window.location.href);
-            window.onpopstate = () => {
-              window.history.pushState(null, '', window.location.href);
-            };
-          }}>Logout</Button>
-          <Button className="w-50" variant="secondary" onClick={() => setShowLogoutModal(false)}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
 
       {showChat && selectedCounselorId && (
         <div style={{

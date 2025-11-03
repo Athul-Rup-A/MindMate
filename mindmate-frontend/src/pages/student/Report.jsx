@@ -15,7 +15,7 @@ const Report = () => {
   const [myReports, setMyReports] = useState([]);
   const currentUserId = getCurrentUserId();
 
-  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/students';
+  const BASE_URL = `${import.meta.env.VITE_API_URL}students`;
 
   const fetchMyReports = async () => {
     try {
@@ -42,26 +42,7 @@ const Report = () => {
           ModelName: 'CounselorPsychologist',
         }));
 
-        // Fetch vents
-        const resVents = await axios.get(`${BASE_URL}/vents`, authHeader());
-        const ventData = resVents.data.map((v) => ({
-          _id: v._id,
-          FullName: v.Topic || 'Untitled Vent',
-          Role: 'Vent',
-          ModelName: 'Vent',
-        }));
-
-        // Fetch resources
-        const resResources = await axios.get(`${BASE_URL}/resources`, authHeader());
-        const resourceData = resResources.data.map((r) => ({
-          _id: r._id,
-          FullName: r.title,
-          Role: 'Resource',
-          ModelName: 'Resource',
-        }));
-
-        // Combine all
-        setTargetList([...counselorData, ...ventData, ...resourceData]);
+        setTargetList(counselorData);
       } catch (err) {
         toast.error('Failed to load target list');
       }
@@ -76,17 +57,7 @@ const Report = () => {
     if (!type) return;
 
     try {
-      if (type === 'resource') {
-        const res = await axios.get(`${BASE_URL}/resources`, authHeader());
-        const transformed = res.data.map((r) => ({
-          _id: r._id,
-          FullName: r.title,
-          Role: 'Resource',
-          ModelName: 'Resource',
-        }));
-        setTargetList(transformed);
-      }
-      else if (type === 'counselor' || type === 'psychologist') {
+      if (type === 'counselor' || type === 'psychologist') {
         const res = await axios.get(`${BASE_URL}/counselorPsychologist`, authHeader());
 
         // Filter only matching roles
@@ -99,16 +70,6 @@ const Report = () => {
 
         setTargetList(transformed);
       }
-      else if (type === 'vent') {
-        const res = await axios.get(`${BASE_URL}/vents`, authHeader());
-        const transformed = res.data.map((v) => ({
-          _id: v._id,
-          FullName: v.Topic || 'Untitled Vent',
-          Role: 'Vent',
-          ModelName: 'Vent',
-        }));
-        setTargetList(transformed);
-      }
     } catch (error) {
       console.error('Failed to fetch targets:', error);
       toast.error('Failed to load target list.');
@@ -117,43 +78,58 @@ const Report = () => {
 
   const validationSchema = Yup.object().shape({
     reportRole: Yup.string()
-      .oneOf(['counselor', 'psychologist', 'vent', 'resource'], 'Select a valid report type')
+      .oneOf(['counselor', 'psychologist'], 'Select a valid report type')
       .required('Report type is required'),
     TargetType: Yup.string()
-      .oneOf(['CounselorPsychologist', 'Resource', 'Vent'], 'Invalid type')
+      .oneOf(['CounselorPsychologist'], 'Invalid type')
       .required('Target type is required'),
-    TargetAliasId: Yup.string().when('TargetType', {
+    TargetUsername: Yup.string().when('TargetType', {
       is: (val) => val === 'CounselorPsychologist',
-      then: () => Yup.string().required('TargetAliasId is required'),
+      then: () => Yup.string().required('TargetUsername is required'),
       otherwise: () => Yup.string().notRequired(),
     }),
     TargetId: Yup.string()
       .required('Please select a target'),
     Reason: Yup.string()
-      .oneOf(['spam', 'abuse', 'offensive', 'harassment', 'misinformation'], 'Invalid reason')
+      .oneOf(
+        ['spam', 'abuse', 'offensive', 'harassment', 'misinformation', 'other'],
+        'Invalid reason'
+      )
       .required('Reason is required'),
+    CustomReason: Yup.string().when('Reason', {
+      is: 'other',
+      then: () =>
+        Yup.string()
+          .min(3, 'Please describe your reason')
+          .required('Please enter a custom reason'),
+      otherwise: () => Yup.string().notRequired(),
+    }),
+
   });
 
   const handleSubmit = async (values, { resetForm }) => {
 
     if (values.TargetType !== 'CounselorPsychologist') {
-      delete values.TargetAliasId;
+      delete values.TargetUsername;
     }
 
     try {
-      await axios.post(`${BASE_URL}/reports`, values, authHeader());
+      const payload = { ...values };
+
+      // if other
+      if (values.Reason === 'other') {
+        payload.OtherReason = values.CustomReason;
+      } else {
+        delete payload.CustomReason;
+        delete payload.OtherReason;
+      }
+
+      if (payload.TargetType !== 'CounselorPsychologist') delete payload.TargetUsername;
+
+      await axios.post(`${BASE_URL}/reports`, payload, authHeader());
       toast.success('Report submitted successfully');
 
-      resetForm({
-        values: {
-          TargetId: '',
-          TargetType: '',
-          TargetAliasId: '',
-          Reason: '',
-          reportRole: '',
-        }
-      });
-
+      resetForm({ values: { TargetId: '', TargetType: '', TargetUsername: '', Reason: '', CustomReason: '', reportRole: '' } });
       setTargetList([]);
       setSelectedTarget(null);
       fetchMyReports();
@@ -191,8 +167,9 @@ const Report = () => {
         initialValues={{
           TargetId: '',
           TargetType: '',
-          TargetAliasId: '',
+          TargetUsername: '',
           Reason: '',
+          CustomReason: '',
           reportRole: '', //To track UI dropdown
         }}
         validationSchema={validationSchema}
@@ -212,20 +189,15 @@ const Report = () => {
                       const selectedRole = e.target.value;
                       handleTypeChange(selectedRole);
 
-                      let backendType = '';
-                      if (selectedRole === 'resource') backendType = 'Resource';
-                      else if (selectedRole === 'vent') backendType = 'Vent';
-                      else backendType = 'CounselorPsychologist';
+                      let backendType = 'CounselorPsychologist';
 
                       setFieldValue("TargetType", backendType);
                       setFieldValue("reportRole", selectedRole);
                     }}
                   >
                     <option value="">-- Select Type --</option>
-                    <option value="vent">Vent</option>
                     <option value="counselor">Counselor</option>
                     <option value="psychologist">Psychologist</option>
-                    <option value="resource">Resource</option>
                   </Field>
 
                   <div className="text-danger small">
@@ -243,18 +215,18 @@ const Report = () => {
                     options={targetList.map((t) => ({
                       value: t._id,
                       label: `${t.FullName} (${t.Role})`,
-                      aliasId: t.AliasId,
+                      username: t.Username,
                       modelName: t.ModelName
                     }))}
                     onChange={(selectedOption) => {
                       setSelectedTarget(selectedOption);
                       setFieldValue('TargetId', selectedOption?.value || '');
 
-                      // Only set TargetAliasId if it's a CounselorPsychologist
+                      // Only set TargetUsername if it's a CounselorPsychologist
                       if (selectedOption?.modelName === 'CounselorPsychologist') {
-                        setFieldValue('TargetAliasId', selectedOption.aliasId || '');
+                        setFieldValue('TargetUsername', selectedOption.username || '');
                       } else {
-                        setFieldValue('TargetAliasId', '');
+                        setFieldValue('TargetUsername', '');
                       }
                     }}
                     placeholder="Select or search target..."
@@ -271,14 +243,36 @@ const Report = () => {
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Reason</Form.Label>
-                  <Field as="select" name="Reason" className="form-control">
+                  <Field as="select" name="Reason" className="form-control"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFieldValue("Reason", value);
+                      if (value !== "other") {
+                        setFieldValue("CustomReason", "");
+                      }
+                    }}>
                     <option value="">-- Select --</option>
                     <option value="spam">Spam</option>
                     <option value="abuse">Abuse</option>
                     <option value="offensive">Offensive</option>
                     <option value="harassment">Harassment</option>
                     <option value="misinformation">Misinformation</option>
+                    <option value="other">Other</option>
                   </Field>
+
+                  <Field name="CustomReason">
+                    {({ field, form }) =>
+                      form.values.Reason === "other" && (
+                        <Form.Control
+                          type="text"
+                          placeholder="Type your custom reason..."
+                          className="mt-2"
+                          {...field}
+                        />
+                      )
+                    }
+                  </Field>
+
                   <div className="text-danger small"><ErrorMessage name="Reason" /></div>
                 </Form.Group>
               </Col>
@@ -312,9 +306,7 @@ const Report = () => {
             {
               header: 'Type',
               accessor: (report) => {
-                if (report.TargetType === 'Resource') return 'resource';
-                if (report.TargetType === 'Vent') return 'vent';
-                if (report.TargetAliasId?.toLowerCase().includes('psychologist')) return 'psychologist';
+                if (report.TargetUsername?.toLowerCase().includes('psychologist')) return 'psychologist';
                 return 'counselor';
               },
             },
